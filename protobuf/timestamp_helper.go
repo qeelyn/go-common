@@ -4,7 +4,6 @@ import (
 	"time"
 	"fmt"
 	"errors"
-	"github.com/golang/protobuf/ptypes"
 )
 
 const (
@@ -91,12 +90,19 @@ func TimestampToTime(ts *Timestamp) (time.Time, error) {
 
 // no safe transform
 func TimeToTimestamp(time time.Time) *Timestamp {
-	tmp, err := ptypes.TimestampProto(time)
-	ret := &Timestamp{}
+	ret, err := TimestampProto(time)
 	if err != nil {
-		return ret
+		return nil
 	}
-	ret.Seconds = tmp.Seconds
-	ret.Nanos = tmp.Nanos
 	return ret
+}
+
+// TimestampString returns the RFC 3339 string for valid Timestamps. For invalid
+// Timestamps, it returns an error message in parentheses.
+func TimestampString(ts *Timestamp) string {
+	t, err := TimestampToTime(ts)
+	if err != nil {
+		return fmt.Sprintf("(%v)", err)
+	}
+	return t.Format(time.RFC3339Nano)
 }

@@ -16,25 +16,15 @@ func (g *Timestamp) Scan(src interface{}) error {
 	return nil
 }
 
-func (g *Timestamp) ToTime() time.Time {
-	val, err := ptypes.Timestamp((*timestamp.Timestamp)(g))
-	if err != nil {
-		return time.Time{}
-	}
-	return val
-}
-
-func (g *Timestamp) ParseFrom(t time.Time) error {
-	tmp, err := ptypes.TimestampProto(t)
-	if err != nil {
-		return err
-	}
-	g.Seconds = tmp.Seconds
-	g.Nanos = tmp.Nanos
-	return nil
+func (g *Timestamp) ToTime() (time.Time,error) {
+	return TimestampToTime(g)
 }
 
 func (g *Timestamp) MarshalJSON() ([]byte, error) {
-	var stamp = fmt.Sprintf("\"%s\"", g.ToTime().Format("2006-01-02 15:04:05"))
+	t,err := TimestampToTime(g)
+	if err != nil {
+		return nil,err
+	}
+	var stamp = fmt.Sprintf("\"%s\"", t.Format("2006-01-02 15:04:05"))
 	return []byte(stamp), nil
 }
