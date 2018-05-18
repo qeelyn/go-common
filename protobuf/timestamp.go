@@ -25,6 +25,6 @@ func (g *Timestamp) MarshalJSON() ([]byte, error) {
 	if err != nil {
 		return nil,err
 	}
-	var stamp = fmt.Sprintf("\"%s\"", t.Format("2006-01-02 15:04:05"))
+	var stamp = fmt.Sprintf("\"%s\"", t.Format(time.RFC3339))
 	return []byte(stamp), nil
 }
