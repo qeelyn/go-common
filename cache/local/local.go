@@ -95,5 +95,5 @@ func convertAssign(dest, src interface{}) error {
 }
 
 func init() {
-	cache.Register("memcache", NewLocalCache)
+	cache.Register("local", NewLocalCache)
 }
