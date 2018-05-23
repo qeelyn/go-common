@@ -93,3 +93,7 @@ func convertAssign(dest, src interface{}) error {
 	}
 	return nil
 }
+
+func init() {
+	cache.Register("memcache", NewLocalCache)
+}
