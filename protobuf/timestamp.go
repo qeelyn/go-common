@@ -4,7 +4,6 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/golang/protobuf/ptypes"
 	"time"
-	"fmt"
 )
 
 type Timestamp timestamp.Timestamp
@@ -16,15 +15,15 @@ func (g *Timestamp) Scan(src interface{}) error {
 	return nil
 }
 
-func (g *Timestamp) ToTime() (time.Time,error) {
+func (g *Timestamp) ToTime() (time.Time, error) {
 	return TimestampToTime(g)
 }
 
 func (g *Timestamp) MarshalJSON() ([]byte, error) {
-	t,err := TimestampToTime(g)
+	t, err := TimestampToTime(g)
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
-	var stamp = fmt.Sprintf("\"%s\"", t.Format(time.RFC3339))
+	var stamp = "\"" + t.Local().Format(time.RFC3339) + "\""
 	return []byte(stamp), nil
 }
