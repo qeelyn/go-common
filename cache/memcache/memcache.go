@@ -75,8 +75,8 @@ func (t *Cache) GetMulti(keys []string) []interface{} {
 	return rv
 }
 
-// Put put value to memcache.
-func (t *Cache) Put(key string, val interface{}, timeout time.Duration) error {
+// Set put value to memcache.
+func (t *Cache) Set(key string, val interface{}, timeout time.Duration) error {
 	var err error
 	item := memcache.Item{Key: key, Expiration: int32(timeout.Seconds())}
 

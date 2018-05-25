@@ -57,7 +57,7 @@ func (t *Cache) GetMulti(keys []string) []interface{} {
 	return values
 }
 
-func (t *Cache) Put(key string, val interface{}, expire time.Duration) error {
+func (t *Cache) Set(key string, val interface{}, expire time.Duration) error {
 	rv := reflect.ValueOf(val)
 	switch rv.Kind() {
 	case reflect.String:

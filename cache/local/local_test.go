@@ -32,25 +32,25 @@ func initTestData(t *testing.T)  {
 	var prt = string("eeeee")
 	var err error
 	var du time.Duration = 1 * time.Hour
-	if err = ins.Put("a", a, du); err != nil {
+	if err = ins.Set("a", a, du); err != nil {
 		t.Fatal(err)
 	}
-	if err = ins.Put("b", b, du); err != nil {
+	if err = ins.Set("b", b, du); err != nil {
 		t.Fatal(err)
 	}
-	if err = ins.Put("c", c, du); err != nil {
+	if err = ins.Set("c", c, du); err != nil {
 		t.Fatal(err)
 	}
-	if err = ins.Put("sl", sl, du); err != nil {
+	if err = ins.Set("sl", sl, du); err != nil {
 		t.Fatal(err)
 	}
-	if err = ins.Put("mp", mp, du); err != nil {
+	if err = ins.Set("mp", mp, du); err != nil {
 		t.Fatal(err)
 	}
-	if err = ins.Put("obj", obj, du); err != nil {
+	if err = ins.Set("obj", obj, du); err != nil {
 		t.Fatal(err)
 	}
-	if err = ins.Put("ptr", &prt, du); err != nil {
+	if err = ins.Set("ptr", &prt, du); err != nil {
 		t.Fatal(err)
 	}
 }

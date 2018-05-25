@@ -37,7 +37,7 @@ func (t *Cache) GetMulti(keys []string) []interface{} {
 	return ret
 }
 
-func (t *Cache) Put(key string, val interface{}, expire time.Duration) error {
+func (t *Cache) Set(key string, val interface{}, expire time.Duration) error {
 	t.localCache.Set(key, val, expire)
 	return nil
 }
