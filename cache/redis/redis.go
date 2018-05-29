@@ -12,6 +12,7 @@ import (
 type Cache struct {
 	redisClient *redis.Client
 	codec       *cache.Codec
+	prefix      string
 }
 
 // NewRedisCache create new redis cache with default collection name.
@@ -23,7 +24,7 @@ func (t *Cache) Get(key string, dest interface{}) error {
 	var err error
 
 	var data []byte
-	if data, err = t.redisClient.Get(key).Bytes(); err != nil {
+	if data, err = t.redisClient.Get(t.joinKey(key)).Bytes(); err != nil {
 		return err
 	}
 
@@ -46,11 +47,11 @@ func (t *Cache) Get(key string, dest interface{}) error {
 
 // the int,string return origin,other need decode
 func (t *Cache) GetMulti(keys []string) []interface{} {
-	var args []interface{}
+	var args []string
 	for _, key := range keys {
-		args = append(args, key)
+		args = append(args, t.joinKey(key))
 	}
-	values, err := t.redisClient.MGet(keys...).Result()
+	values, err := t.redisClient.MGet(args...).Result()
 	if err != nil {
 		return nil
 	}
@@ -59,6 +60,7 @@ func (t *Cache) GetMulti(keys []string) []interface{} {
 
 func (t *Cache) Set(key string, val interface{}, expire time.Duration) error {
 	rv := reflect.ValueOf(val)
+	key = t.joinKey(key)
 	switch rv.Kind() {
 	case reflect.String:
 		return t.redisClient.Set(key, val, expire).Err()
@@ -82,15 +84,15 @@ func (t *Cache) Set(key string, val interface{}, expire time.Duration) error {
 }
 
 func (t *Cache) Delete(key string) error {
-	return t.redisClient.Del(key).Err()
+	return t.redisClient.Del(t.joinKey(key)).Err()
 }
 
 func (t *Cache) Incr(key string) error {
-	return t.redisClient.Incr(key).Err()
+	return t.redisClient.Incr(t.joinKey(key)).Err()
 }
 
 func (t *Cache) Decr(key string) error {
-	return t.redisClient.Decr(key).Err()
+	return t.redisClient.Decr(t.joinKey(key)).Err()
 }
 
 func (t *Cache) FlushAll() error {
@@ -98,13 +100,23 @@ func (t *Cache) FlushAll() error {
 }
 
 func (t *Cache) IsExist(key string) bool {
-	return t.redisClient.Exists(key).Val() != 0
+	return t.redisClient.Exists(t.joinKey(key)).Val() != 0
 }
 
 func (t *Cache) StartAndGC(config map[string]interface{}) error {
 	t.redisClient = qredis.NewRedisByMap(config)
 	t.codec = &cache.Codec{}
+	if prefix,ok := config["prefix"];ok {
+		t.prefix = prefix.(string)
+	}
 	return nil
+}
+
+func (t *Cache)joinKey(key string) string {
+	if t.prefix == "" {
+		return key
+	}
+	return t.prefix + key
 }
 
 func init() {

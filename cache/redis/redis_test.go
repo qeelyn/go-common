@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 	"github.com/qeelyn/go-common/cache/redis"
+	"fmt"
 )
 
 var (
@@ -24,6 +25,7 @@ func init() {
 	ins.StartAndGC(map[string]interface{}{
 		"addr": ":6379",
 		"db":   1,
+		"prefix": "redis:",
 	})
 }
 
@@ -101,6 +103,20 @@ func TestCacheWrapper_Get(t *testing.T) {
 	if obj.B1 != "Bar" {
 		t.Fatal("obj no equeal")
 	}
+}
+
+func TestCache_GetMulti(t *testing.T) {
+	initTestData(t)
+	//var (
+	//	a   string
+	//	b   int = 0
+	//	c 	float64
+	//	sl  []int
+	//	err error
+	//	obj Bar
+	//)
+	vals := ins.GetMulti([]string{"a","b","c","sl","obj"})
+	fmt.Print(vals...)
 }
 
 func TestCacheWrapper_Incr(t *testing.T) {

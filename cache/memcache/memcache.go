@@ -16,7 +16,8 @@ import (
 type Cache struct {
 	conn     *memcache.Client
 	conninfo []string
-	codec       cache.Codec
+	codec    cache.Codec
+	prefix   string
 }
 
 // NewMemCache create new memcache adapter.
@@ -24,17 +25,17 @@ func NewMemCache() cache.Cache {
 	return &Cache{}
 }
 
-func NewMemcacheClient(config map[string]interface{}) (*memcache.Client,error) {
+func NewMemcacheClient(config map[string]interface{}) (*memcache.Client, error) {
 	if _, ok := config["addr"]; !ok {
-		return nil,errors.New("config has no addr key")
+		return nil, errors.New("config has no addr key")
 	}
 	conn := strings.Split(config["addr"].(string), ";")
-	return memcache.New(conn...),nil
+	return memcache.New(conn...), nil
 }
 
 // Get get value from memcache.
 func (t *Cache) Get(key string, dest interface{}) error {
-	item, err := t.conn.Get(key)
+	item, err := t.conn.Get(t.joinKey(key))
 	if err != nil {
 		return err
 	}
@@ -61,8 +62,14 @@ func (t *Cache) Get(key string, dest interface{}) error {
 // GetMulti get value from memcache.
 func (t *Cache) GetMulti(keys []string) []interface{} {
 	size := len(keys)
-	var rv []interface{}
-	mv, err := t.conn.GetMulti(keys)
+	var (
+		rv   []interface{}
+		args []string
+	)
+	for _, key := range keys {
+		args = append(args, t.joinKey(key))
+	}
+	mv, err := t.conn.GetMulti(args)
 	if err == nil {
 		for _, v := range mv {
 			rv = append(rv, v.Value)
@@ -78,7 +85,7 @@ func (t *Cache) GetMulti(keys []string) []interface{} {
 // Set put value to memcache.
 func (t *Cache) Set(key string, val interface{}, timeout time.Duration) error {
 	var err error
-	item := memcache.Item{Key: key, Expiration: int32(timeout.Seconds())}
+	item := memcache.Item{Key: t.joinKey(key), Expiration: int32(timeout.Seconds())}
 
 	if v, ok := val.([]byte); ok {
 		item.Value = v
@@ -98,7 +105,7 @@ func (t *Cache) Set(key string, val interface{}, timeout time.Duration) error {
 		case reflect.Bool:
 			item.Value = []byte(util.AsString(val))
 		default:
-			if item.Value,err = t.codec.Marshal(val);err!=nil{
+			if item.Value, err = t.codec.Marshal(val); err != nil {
 				return err
 			}
 		}
@@ -109,24 +116,24 @@ func (t *Cache) Set(key string, val interface{}, timeout time.Duration) error {
 
 // Delete delete value in memcache.
 func (t *Cache) Delete(key string) error {
-	return t.conn.Delete(key)
+	return t.conn.Delete(t.joinKey(key))
 }
 
 // Incr increase counter.
 func (t *Cache) Incr(key string) error {
-	_, err := t.conn.Increment(key, 1)
+	_, err := t.conn.Increment(t.joinKey(key), 1)
 	return err
 }
 
 // Decr decrease counter.
 func (t *Cache) Decr(key string) error {
-	_, err := t.conn.Decrement(key, 1)
+	_, err := t.conn.Decrement(t.joinKey(key), 1)
 	return err
 }
 
 // IsExist check value exists in memcache.
 func (t *Cache) IsExist(key string) bool {
-	_, err := t.conn.Get(key)
+	_, err := t.conn.Get(t.joinKey(key))
 	return !(err != nil)
 }
 
@@ -140,14 +147,23 @@ func (t *Cache) FlushAll() error {
 // if connecting error, return.
 func (t *Cache) StartAndGC(config map[string]interface{}) error {
 	var err error
-	if t.conn,err = NewMemcacheClient(config);err != nil {
+	if t.conn, err = NewMemcacheClient(config); err != nil {
 		return err
 	}
+	if prefix,ok := config["prefix"];ok {
+		t.prefix = prefix.(string)
+	}
+
 	return nil
+}
+
+func (t *Cache) joinKey(key string) string {
+	if t.prefix == "" {
+		return key
+	}
+	return t.prefix + key
 }
 
 func init() {
 	cache.Register("memcache", NewMemCache)
 }
-
-
