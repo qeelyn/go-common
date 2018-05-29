@@ -1,14 +1,9 @@
 package cache
 
 import (
-	"errors"
 	"time"
 	"fmt"
 	"gopkg.in/vmihailenco/msgpack.v3"
-)
-
-var(
-	ErrCacheNotFound = errors.New("cache not found")
 )
 
 type Cache interface {

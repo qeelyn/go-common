@@ -5,6 +5,7 @@ import (
 	"time"
 	"github.com/qeelyn/go-common/cache/memcache"
 	"fmt"
+	"github.com/qeelyn/go-common/cache"
 )
 
 var (
@@ -131,3 +132,15 @@ func TestCacheWrapper_Incr(t *testing.T) {
 		t.Fatal("incr error")
 	}
 }
+
+func TestCache_GetMiss(t *testing.T) {
+	var a string
+	if err := ins.Get("noexist",&a);err != nil {
+		if err != cache.ErrCacheMiss {
+			t.Error()
+		}
+	} else {
+		t.Error()
+	}
+}
+

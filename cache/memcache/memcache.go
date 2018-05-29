@@ -37,6 +37,9 @@ func NewMemcacheClient(config map[string]interface{}) (*memcache.Client, error) 
 func (t *Cache) Get(key string, dest interface{}) error {
 	item, err := t.conn.Get(t.joinKey(key))
 	if err != nil {
+		if err == memcache.ErrCacheMiss {
+			return cache.ErrCacheMiss
+		}
 		return err
 	}
 

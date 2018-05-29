@@ -25,6 +25,9 @@ func (t *Cache) Get(key string, dest interface{}) error {
 
 	var data []byte
 	if data, err = t.redisClient.Get(t.joinKey(key)).Bytes(); err != nil {
+		if err == redis.Nil {
+			return cache.ErrCacheMiss
+		}
 		return err
 	}
 
