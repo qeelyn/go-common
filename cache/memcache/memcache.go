@@ -30,7 +30,11 @@ func NewMemcacheClient(config map[string]interface{}) (*memcache.Client, error) 
 		return nil, errors.New("config has no addr key")
 	}
 	conn := strings.Split(config["addr"].(string), ";")
-	return memcache.New(conn...), nil
+	client := memcache.New(conn...)
+	if _,ok := config["maxIdleConns"];ok {
+		client.MaxIdleConns = config["maxIdleConns"].(int)
+	}
+	return client, nil
 }
 
 // Get get value from memcache.
