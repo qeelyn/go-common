@@ -31,7 +31,7 @@ func NewMemcacheClient(config map[string]interface{}) (*memcache.Client, error) 
 	}
 	conn := strings.Split(config["addr"].(string), ";")
 	client := memcache.New(conn...)
-	if _,ok := config["maxIdleConns"];ok {
+	if _, ok := config["maxIdleConns"]; ok {
 		client.MaxIdleConns = config["maxIdleConns"].(int)
 	}
 	return client, nil
@@ -91,8 +91,16 @@ func (t *Cache) GetMulti(keys []string) []interface{} {
 
 // Set put value to memcache.
 func (t *Cache) Set(key string, val interface{}, timeout time.Duration) error {
+	item,err := t.NewCacheItem(key,val,timeout)
+	if err != nil {
+		return err
+	}
+	return t.conn.Set(item)
+}
+
+func (t *Cache)NewCacheItem(key string, val interface{}, timeout time.Duration) (*memcache.Item, error) {
 	var err error
-	item := memcache.Item{Key: t.joinKey(key), Expiration: int32(timeout.Seconds())}
+	item := &memcache.Item{Key: t.joinKey(key), Expiration: int32(timeout.Seconds())}
 
 	if v, ok := val.([]byte); ok {
 		item.Value = v
@@ -113,29 +121,47 @@ func (t *Cache) Set(key string, val interface{}, timeout time.Duration) error {
 			item.Value = []byte(util.AsString(val))
 		default:
 			if item.Value, err = t.codec.Marshal(val); err != nil {
-				return err
+				return nil,err
 			}
 		}
 	}
-
-	return t.conn.Set(&item)
+	return item,nil
 }
 
 // Delete delete value in memcache.
 func (t *Cache) Delete(key string) error {
-	return t.conn.Delete(t.joinKey(key))
+	if err := t.conn.Delete(t.joinKey(key)); err != nil {
+		if err != memcache.ErrCacheMiss {
+			return err
+		}
+	}
+	return nil
 }
 
 // Incr increase counter.
 func (t *Cache) Incr(key string) error {
-	_, err := t.conn.Increment(t.joinKey(key), 1)
-	return err
+	if _, err := t.conn.Increment(t.joinKey(key), 1); err != nil {
+		if err != memcache.ErrCacheMiss {
+			return err
+		}
+		item,_ := t.NewCacheItem(key,1,0)
+		if t.conn.Add(item) != nil {
+			_,err = t.conn.Increment(key, 1)
+			return err
+		}
+	}
+	return nil
 }
 
-// Decr decrease counter.
+// Decr decrease counter,memcache dono't support decrement negative number
 func (t *Cache) Decr(key string) error {
-	_, err := t.conn.Decrement(t.joinKey(key), 1)
-	return err
+	if _, err := t.conn.Decrement(t.joinKey(key), 1); err != nil {
+		if err == memcache.ErrCacheMiss {
+			return cache.ErrCacheMiss
+		}
+		return err
+	}
+	return nil
 }
 
 // IsExist check value exists in memcache.
@@ -157,7 +183,7 @@ func (t *Cache) StartAndGC(config map[string]interface{}) error {
 	if t.conn, err = NewMemcacheClient(config); err != nil {
 		return err
 	}
-	if prefix,ok := config["prefix"];ok {
+	if prefix, ok := config["prefix"]; ok {
 		t.prefix = prefix.(string)
 	}
 

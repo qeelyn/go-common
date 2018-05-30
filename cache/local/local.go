@@ -48,11 +48,21 @@ func (t *Cache) Delete(key string) error {
 }
 
 func (t *Cache) Incr(key string) error {
-	return t.localCache.Increment(key, 1)
+	if err := t.localCache.Increment(key, 1); err != nil {
+		if t.localCache.Add(key, 1, 0) != nil {
+			return t.localCache.Increment(key, 1)
+		}
+	}
+	return nil
 }
 
 func (t *Cache) Decr(key string) error {
-	return t.localCache.Decrement(key, 1)
+	if err := t.localCache.Decrement(key, 1); err != nil {
+		if t.localCache.Add(key, -1, 0) != nil {
+			return t.localCache.Decrement(key, 1)
+		}
+	}
+	return nil
 }
 
 func (t *Cache) FlushAll() error {

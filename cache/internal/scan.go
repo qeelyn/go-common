@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"reflect"
 	"github.com/qeelyn/go-common/cache/internal/util"
-	"math"
-	"encoding/binary"
 )
 
 func Scan(b []byte, v interface{}) error {
@@ -164,21 +162,4 @@ func makeSliceNextElemFunc(v reflect.Value) func() reflect.Value {
 		v.Set(reflect.Append(v, zero))
 		return v.Index(v.Len() - 1)
 	}
-}
-
-//float 32/64 -> []byte
-func Float32ToByte(float float32) []byte {
-	bits := math.Float32bits(float)
-	bytes := make([]byte, 4)
-	binary.LittleEndian.PutUint32(bytes, bits)
-
-	return bytes
-}
-
-func Float64ToByte(float float64) []byte {
-	bits := math.Float64bits(float)
-	bytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(bytes, bits)
-
-	return bytes
 }

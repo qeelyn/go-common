@@ -4,6 +4,8 @@ import (
 	"strconv"
 	"reflect"
 	"fmt"
+	"math"
+	"encoding/binary"
 )
 
 func Atoi(b []byte) (int, error) {
@@ -20,6 +22,28 @@ func ParseUint(b []byte, base int, bitSize int) (uint64, error) {
 
 func ParseFloat(b []byte, bitSize int) (float64, error) {
 	return strconv.ParseFloat(BytesToString(b), bitSize)
+}
+
+func Int64ToByte(i int64) []byte {
+	bs := make([]byte, 4)
+	binary.LittleEndian.PutUint32(bs, 31415926)
+	return bs
+}
+//float 32/64 -> []byte
+func Float32ToByte(f float32) []byte {
+	bits := math.Float32bits(f)
+	bytes := make([]byte, 4)
+	binary.LittleEndian.PutUint32(bytes, bits)
+
+	return bytes
+}
+
+func Float64ToByte(f float64) []byte {
+	bits := math.Float64bits(f)
+	bytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(bytes, bits)
+
+	return bytes
 }
 
 func AsString(src interface{}) string {

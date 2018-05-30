@@ -134,6 +134,22 @@ func TestCacheWrapper_Incr(t *testing.T) {
 	}
 }
 
+func TestCache_IncrNoExist(t *testing.T) {
+	key := "noexist"
+	ins.Delete(key)
+	if err := ins.Incr(key); err != nil {
+		t.Error(err)
+	}
+	if !ins.IsExist(key) {
+		t.Error("incr no exist failure!")
+	}
+	var a int
+	ins.Get(key,&a)
+	if a != 1 {
+		t.Error("incr no exist failure!")
+	}
+}
+
 func TestCache_GetMiss(t *testing.T) {
 	var a string
 	if err := ins.Get("noexist",&a);err != nil {
@@ -142,5 +158,52 @@ func TestCache_GetMiss(t *testing.T) {
 		}
 	} else {
 		t.Error()
+	}
+}
+
+func TestCache_Delete(t *testing.T) {
+	// no exists key
+	if err := ins.Delete("abc");err != nil {
+		t.Error(err)
+	}
+	initTestData(t)
+	if err := ins.Delete("a");err != nil {
+		t.Error(err)
+	}
+	if ins.IsExist("a") {
+		t.Error("not delete success")
+	}
+}
+
+func TestCache_Decr(t *testing.T) {
+	key := "noexist"
+	ins.Delete(key)
+	if err := ins.Decr(key); err != nil {
+		t.Error(err)
+	}
+	if !ins.IsExist(key) {
+		t.Error("Decr no exist failure!")
+	}
+	var a int
+	ins.Get(key,&a)
+	if a != -1 {
+		t.Error("Decr no exist failure!")
+	}
+	if err := ins.Decr(key); err != nil {
+		t.Error(err)
+	}
+	ins.Get(key,&a)
+	if a != -2 {
+		t.Error("Decr no exist failure!")
+	}
+}
+
+func TestCache_FlushAll(t *testing.T) {
+	initTestData(t)
+	if err := ins.FlushAll();err!=nil{
+		t.Fatal(err)
+	}
+	if ins.IsExist("a") {
+		t.Fatal("flush error")
 	}
 }
