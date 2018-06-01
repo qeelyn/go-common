@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package qeelyn.protobuf;
+
+option go_package = "github.com/qeelyn/go-common/protobuf/paginate";
+
+message PageInfo {
+    string startCursor = 1;
+    string endCursor = 2;
+    bool hasNextPage = 3;
+    bool hasPreviousPage = 4;
+}

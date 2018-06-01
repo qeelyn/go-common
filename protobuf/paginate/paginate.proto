@@ -5,8 +5,8 @@ package qeelyn.protobuf;
 option go_package = "github.com/qeelyn/go-common/protobuf/paginate";
 
 message Paginate {
-    string startCursor = 1;
-    string endCursor = 2;
-    bool hasNextPage = 3;
-    bool hasPreviousPage = 4;
+    int32 first = 1;
+    string after = 2;
+    int32 last = 3;
+    string before = 4;
 }
