@@ -85,7 +85,7 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("protobuf/paginate/paginate.proto", fileDescriptor_paginate_b3723201b87ef71c)
+	proto.RegisterFile("qeelyn/protobuf/paginate.proto", fileDescriptor_paginate_b3723201b87ef71c)
 }
 
 var fileDescriptor_paginate_b3723201b87ef71c = []byte{
