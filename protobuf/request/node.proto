@@ -6,7 +6,8 @@ option go_package = "github.com/qeelyn/go-common/protobuf/request";
 
 // node表示单个数据项,可对应到数据库中的一种数据表类型的数据
 message NodeRequest {
-    string id = 1;
+    // 对象的全局ID
+    string globle_id = 1;
     // 指定字段
     string fields = 2;
     // 条件字段
