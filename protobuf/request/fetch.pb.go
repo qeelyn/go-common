@@ -117,7 +117,7 @@ func init() {
 	proto.RegisterMapType((map[string]string)(nil), "qeelyn.protobuf.FetchRequest.WhereParamsEntry")
 }
 
-func init() { proto.RegisterFile("protobuf/request/fetch.proto", fileDescriptor_fetch_3443aff92b8aa122) }
+func init() { proto.RegisterFile("qeelyn/protobuf/fetch.proto", fileDescriptor_fetch_3443aff92b8aa122) }
 
 var fileDescriptor_fetch_3443aff92b8aa122 = []byte{
 	// 302 bytes of a gzipped FileDescriptorProto

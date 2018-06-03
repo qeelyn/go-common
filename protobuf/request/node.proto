@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package qeelyn.protobuf;
+
+option go_package = "github.com/qeelyn/go-common/protobuf/request";
+
+// node表示单个数据项,可对应到数据库中的一种数据表类型的数据
+message NodeRequest {
+    string id = 1;
+    // 指定字段
+    string fields = 2;
+    // 条件字段
+    string where = 3;
+    // 与where参数顺序对应的参数值
+    map<string,string> where_params = 4;
+    // order by
+    string order = 5;
+}
