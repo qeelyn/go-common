@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package qeelyn.protobuf;
+
+option go_package = "github.com/qeelyn/go-common/protobuf/request";
+
+import "protobuf/paginate/paginate.proto";
+
+message FetchRequest {
+    // 根据ID获取
+    repeated string ids = 1;
+    // 指定字段
+    string fields = 2;
+    // 条件字段
+    string where = 3;
+    // 与where参数顺序对应的参数值
+    map<string,string> where_params = 4;
+    // order by
+    string order = 5;
+    // 分页请求
+    qeelyn.protobuf.Paginate paginate = 6;
+    // 总计
+    bool need_total = 7;
+}
