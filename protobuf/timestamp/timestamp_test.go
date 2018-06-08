@@ -1,4 +1,4 @@
-package protobuf_test
+package timestamp
 
 import (
 	"testing"
