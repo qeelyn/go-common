@@ -1,16 +1,16 @@
-package timestamp
+package timestamp_test
 
 import (
 	"testing"
 	"time"
-	"github.com/qeelyn/go-common/protobuf"
+	"github.com/qeelyn/go-common/protobuf/timestamp"
 	"fmt"
 )
 
 func TestTimeToTimestamp(t *testing.T) {
 	exp := time.Date(2018,5,16,9,50,30,0,time.UTC)
 	exp = time.Now()
-	tsmp := protobuf.TimeToTimestamp(exp)
+	tsmp := timestamp.TimeToTimestamp(exp)
 
 	if tsmp.Seconds != exp.Unix() {
 		t.Error("t to tsmp error!")
@@ -20,9 +20,9 @@ func TestTimeToTimestamp(t *testing.T) {
 func TestTimestampToTime(t *testing.T) {
 	exp := time.Date(2018,5,16,9,50,30,0,time.UTC)
 	exp = time.Now()
-	tsmp := protobuf.TimeToTimestamp(exp)
+	tsmp := timestamp.TimeToTimestamp(exp)
 
-	tm,err := protobuf.TimestampToTime(tsmp)
+	tm,err := timestamp.TimestampToTime(tsmp)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -33,7 +33,7 @@ func TestTimestampToTime(t *testing.T) {
 
 func TestTimestamp_MarshalJSON(t *testing.T) {
 	exp := time.Date(2018,5,16,9,50,30,0,time.Local)
-	tsmp := protobuf.TimeToTimestamp(exp)
+	tsmp := timestamp.TimeToTimestamp(exp)
 	s,_:= tsmp.MarshalJSON()
 	act := string(s)
 	want := fmt.Sprintf("\"%s\"",exp.Local().Format(time.RFC3339))

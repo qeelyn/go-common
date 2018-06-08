@@ -5,7 +5,7 @@ import (
 	"time"
 	"reflect"
 	"strconv"
-	"github.com/qeelyn/go-common/protobuf"
+	"github.com/qeelyn/go-common/protobuf/timestamp"
 )
 
 func MapForm(ptr interface{}, form map[string][]string) error {
@@ -56,7 +56,7 @@ func MapForm(ptr interface{}, form map[string][]string) error {
 					return err
 				}
 				continue
-			} else if _,isGTime := structField.Interface().(*protobuf.Timestamp);isGTime {
+			} else if _,isGTime := structField.Interface().(*timestamp.Timestamp);isGTime {
 				if err := setProtoTimestamp(inputValue[0], typeField, structField); err != nil {
 					return err
 				}
@@ -192,7 +192,7 @@ func setProtoTimestamp(val string, structField reflect.StructField, value reflec
 	}
 
 	if val == "" {
-		gtvalue,err := protobuf.TimestampProto(time.Time{})
+		gtvalue,err := timestamp.TimestampProto(time.Time{})
 		if err != nil {
 			return err
 		}
@@ -209,7 +209,7 @@ func setProtoTimestamp(val string, structField reflect.StructField, value reflec
 	if err != nil {
 		return err
 	}
-	gtvalue,err := protobuf.TimestampProto(t)
+	gtvalue,err := timestamp.TimestampProto(t)
 	if err != nil {
 		return err
 	}
