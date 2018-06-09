@@ -4,7 +4,7 @@ package qeelyn.protobuf;
 
 option go_package = "github.com/qeelyn/go-common/protobuf/request";
 
-import "qeelyn/protobuf/paginate.proto";
+import "qeelyn/protobuf/pagination.proto";
 
 message FetchRequest {
     // 根据ID获取
@@ -18,7 +18,7 @@ message FetchRequest {
     // order by
     string order = 5;
     // 分页请求
-    qeelyn.protobuf.Paginate paginate = 6;
+    qeelyn.protobuf.Pagination paginate = 6;
     // 总计
     bool need_total = 7;
 }
