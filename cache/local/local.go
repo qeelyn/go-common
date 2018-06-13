@@ -20,7 +20,7 @@ func (t *Cache) Get(key string, dest interface{}) error {
 	if cacheData, ok := t.localCache.Get(key); ok {
 		return convertAssign(dest, cacheData)
 	}
-	return nil
+	return cache.ErrCacheMiss
 }
 
 func (t *Cache) GetMulti(keys []string) []interface{} {
