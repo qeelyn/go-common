@@ -1,5 +1,7 @@
 package wrappers
 
+import "errors"
+
 type DoubleValue float64
 
 type FloatValue float32
@@ -15,5 +17,19 @@ type UInt32Value uint32
 type BoolValue bool
 
 type StringValue string
+
+func (*StringValue) ImplementsGraphQLType(name string) bool {
+	return name == "String"
+}
+
+func (t *StringValue)UnmarshalGraphQL(input interface{}) error{
+	if v,ok := input.(string);!ok{
+		return errors.New("input value is not string")
+	} else {
+		*t = StringValue(v)
+		return nil
+	}
+}
+
 
 type BytesValue []byte
