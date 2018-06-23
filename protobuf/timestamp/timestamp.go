@@ -6,6 +6,7 @@ import (
 	"time"
 	"fmt"
 	"database/sql/driver"
+	"github.com/golang/protobuf/proto"
 )
 
 type Timestamp timestamp.Timestamp
@@ -68,4 +69,15 @@ func (t *Timestamp) UnmarshalGraphQL(input interface{}) error {
 	default:
 		return fmt.Errorf("wrong type")
 	}
+}
+
+// proto message
+func (t *Timestamp) Reset() {
+	*t = Timestamp{}
+}
+
+func (*Timestamp) ProtoMessage() {}
+
+func (t *Timestamp) String() string {
+	return proto.CompactTextString(t)
 }
