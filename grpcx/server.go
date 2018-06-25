@@ -1,18 +1,18 @@
 package grpcx
 
 import (
-	"net"
 	"fmt"
-	"github.com/opentracing/opentracing-go"
 	"github.com/grpc-ecosystem/go-grpc-middleware"
+	"github.com/grpc-ecosystem/go-grpc-middleware/auth"
+	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	"github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	"github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	"github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
-	"github.com/grpc-ecosystem/go-grpc-middleware/recovery"
-	"github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	"github.com/grpc-ecosystem/go-grpc-prometheus"
-	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
-	"google.golang.org/grpc"
+	"github.com/opentracing/opentracing-go"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"net"
 )
 
 type Server struct {
@@ -81,7 +81,7 @@ func Default(opts ...Option) (*Server, error) {
 	if sOptions.authFunc != nil {
 		sOptions.unaryServerInterceptors = append(sOptions.unaryServerInterceptors, grpc_auth.UnaryServerInterceptor(sOptions.authFunc))
 	}
-	// recovery at lastest
+	// recovery at last
 	sOptions.applyOption(WithUnaryServerInterceptor(grpc_recovery.UnaryServerInterceptor()))
 	srv := &Server{
 		Option: sOptions,
@@ -99,7 +99,7 @@ func Default(opts ...Option) (*Server, error) {
 
 func (t Server) BuildGrpcServer() *grpc.Server {
 	var opts []grpc.ServerOption
-	if (len(t.Option.unaryServerInterceptors) > 0) {
+	if len(t.Option.unaryServerInterceptors) > 0 {
 		opts = append(opts, grpc.UnaryInterceptor(
 			grpc_middleware.ChainUnaryServer(t.Option.unaryServerInterceptors...),
 		))
