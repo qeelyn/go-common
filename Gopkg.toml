@@ -29,7 +29,7 @@
   name = "github.com/go-redis/redis"
   version = "6.10.2"
 
-[[constraint]]
+[[override]]
   name = "github.com/golang/protobuf"
   version = "1.1.0"
 
@@ -40,3 +40,7 @@
 [[constraint]]
   branch = "master"
   name = "github.com/bradfitz/gomemcache"
+
+[[constraint]]
+  name = "go.uber.org/zap"
+  version = "1.8.0"
