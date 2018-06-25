@@ -1,18 +1,25 @@
 package grpcx
 
 import (
+	"context"
 	"fmt"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	"github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	"github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
+	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
 	"github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/opentracing/opentracing-go"
+	"github.com/qeelyn/go-common/auth"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"net"
+	"strconv"
 )
 
 type Server struct {
@@ -114,4 +121,32 @@ func (t Server) Run(rpcSrv *grpc.Server, listen string) error {
 		return fmt.Errorf("failed to listen: %v", err)
 	}
 	return rpcSrv.Serve(lis)
+}
+
+func AuthFunc(keyFile string) grpc_auth.AuthFunc {
+	validator := auth.BearTokenValidator{
+		PubKeyFile: keyFile,
+		IdentityHandler: func(ctx context.Context, claims jwt.MapClaims) {
+			orgIdStr := metautils.ExtractIncoming(ctx).Get("orgid")
+			id, _ := strconv.Atoi(claims["sub"].(string))
+			orgId, _ := strconv.Atoi(orgIdStr)
+			identity := &auth.Identity{
+				Id:    int32(id),
+				OrgId: int32(orgId),
+			}
+			context.WithValue(ctx, "user", identity)
+		},
+	}
+	validator.Init()
+	return func(ctx context.Context) (context.Context, error) {
+		token, err := grpc_auth.AuthFromMD(ctx, "bearer")
+		if err != nil {
+			return ctx, err
+		}
+
+		if err = validator.Validate(ctx, token); err != nil {
+			return ctx, status.Error(codes.Unauthenticated, err.Error())
+		}
+		return ctx, nil
+	}
 }

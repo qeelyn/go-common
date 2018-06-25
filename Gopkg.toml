@@ -44,3 +44,11 @@
 [[constraint]]
   name = "go.uber.org/zap"
   version = "1.8.0"
+
+[[constraint]]
+  name = "github.com/dgrijalva/jwt-go"
+  version = "3.2.0"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/grpc-ecosystem/grpc-opentracing"
