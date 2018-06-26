@@ -26,7 +26,7 @@ type BearTokenValidator struct {
 	TokenValidator func(token *jwt.Token, c context.Context) error
 
 	// Set the identity handler function. that mean the jwt is pass validete
-	IdentityHandler func(c context.Context, claims jwt.MapClaims)
+	IdentityHandler func(c context.Context, claims jwt.MapClaims) (*Identity, error)
 
 	// Private key file for asymmetric algorithms
 	PrivKeyFile string
@@ -47,6 +47,9 @@ var (
 
 	// ErrForbidden when HTTP status 403 is given
 	ErrForbidden = errors.New("you don't have permission to access this resource")
+
+	// ErrInvalidPrivKey indicates that the given private key is invalid
+	ErrInvalidClaims = errors.New("token payload content invalid")
 
 	// ErrNoPrivKeyFile indicates that the given private key is unreadable
 	ErrNoPrivKeyFile = errors.New("private key file unreadable")
@@ -125,22 +128,25 @@ func (b *BearTokenValidator) Init() error {
 	return nil
 }
 
-func (b *BearTokenValidator) Validate(ctx context.Context, input string) error {
+func (b *BearTokenValidator) Validate(ctx context.Context, input string) (*Identity, error) {
 	token, err := b.parseToken(input)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 	// customer validate
-	if err = b.TokenValidator(token, ctx); err != nil {
-		return ErrForbidden
+	if b.TokenValidator != nil {
+		if err = b.TokenValidator(token, ctx); err != nil {
+			return nil, ErrForbidden
+		}
 	}
 
-	claims := token.Claims.(jwt.MapClaims)
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return nil, ErrInvalidClaims
+	}
 
-	b.IdentityHandler(ctx, claims)
-
-	return nil
+	return b.IdentityHandler(ctx, claims)
 }
 
 func (b *BearTokenValidator) signedString(token *jwt.Token) (string, error) {

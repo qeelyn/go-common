@@ -126,7 +126,7 @@ func (t Server) Run(rpcSrv *grpc.Server, listen string) error {
 func AuthFunc(keyFile string) grpc_auth.AuthFunc {
 	validator := auth.BearTokenValidator{
 		PubKeyFile: keyFile,
-		IdentityHandler: func(ctx context.Context, claims jwt.MapClaims) {
+		IdentityHandler: func(ctx context.Context, claims jwt.MapClaims) (*auth.Identity, error) {
 			orgIdStr := metautils.ExtractIncoming(ctx).Get("orgid")
 			id, _ := strconv.Atoi(claims["sub"].(string))
 			orgId, _ := strconv.Atoi(orgIdStr)
@@ -134,7 +134,7 @@ func AuthFunc(keyFile string) grpc_auth.AuthFunc {
 				Id:    int32(id),
 				OrgId: int32(orgId),
 			}
-			context.WithValue(ctx, "user", identity)
+			return identity, nil
 		},
 	}
 	validator.Init()
@@ -144,9 +144,10 @@ func AuthFunc(keyFile string) grpc_auth.AuthFunc {
 			return ctx, err
 		}
 
-		if err = validator.Validate(ctx, token); err != nil {
-			return ctx, status.Error(codes.Unauthenticated, err.Error())
+		if id, err := validator.Validate(ctx, token); err != nil {
+			return nil, status.Error(codes.Unauthenticated, err.Error())
+		} else {
+			return context.WithValue(ctx, "user", id), nil
 		}
-		return ctx, nil
 	}
 }
