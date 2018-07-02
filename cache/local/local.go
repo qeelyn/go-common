@@ -1,10 +1,10 @@
 package local
 
 import (
-	"reflect"
 	gocache "github.com/patrickmn/go-cache"
-	"time"
 	"github.com/qeelyn/go-common/cache"
+	"reflect"
+	"time"
 )
 
 func NewLocalCache() cache.Cache {
@@ -78,12 +78,12 @@ func (t *Cache) IsExist(key string) bool {
 }
 
 func (t *Cache) StartAndGC(config map[string]interface{}) error {
-	var defaultExp, cleanUp = 10*time.Minute, 30*time.Minute
+	var defaultExp, cleanUp = 10 * time.Minute, 30 * time.Minute
 	if duration, ok := config["duration"]; ok {
-		defaultExp = time.Duration(duration.(int)) * time.Minute
+		defaultExp = time.Duration(duration.(int)) * time.Second
 	}
 	if gc, ok := config["gc"]; ok {
-		cleanUp = time.Duration(gc.(int)) * time.Minute
+		cleanUp = time.Duration(gc.(int)) * time.Second
 	}
 	t.localCache = gocache.New(defaultExp, cleanUp)
 	t.localCacheDuration = defaultExp
