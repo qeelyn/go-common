@@ -15,17 +15,16 @@ import (
 	"path"
 )
 
-const PREFIX = "qeelyn"
+const SCHEMA = "qeelyn"
 
 type etcdv3Registry struct {
 	client   *clientv3.Client
-	cc       resolver.ClientConn
 	options  registry.Options
 	register map[string]uint64
 	leases   map[string]clientv3.LeaseID
 }
 
-func NewRegistry(opts ...registry.Option) registry.Registry {
+func NewRegistry(opts ...registry.Option) (registry.Registry, error) {
 	config := clientv3.Config{
 		Endpoints: []string{"127.0.0.1:2379"},
 	}
@@ -64,7 +63,10 @@ func NewRegistry(opts ...registry.Option) registry.Registry {
 		config.Endpoints = cAddrs
 	}
 	config.DialTimeout = options.Timeout
-	cli, _ := clientv3.New(config)
+	cli, err := clientv3.New(config)
+	if err != nil {
+		return nil, err
+	}
 	e := &etcdv3Registry{
 		client:   cli,
 		options:  options,
@@ -72,7 +74,7 @@ func NewRegistry(opts ...registry.Option) registry.Registry {
 		leases:   make(map[string]clientv3.LeaseID),
 	}
 
-	return e
+	return e, nil
 }
 
 func init() {
@@ -131,92 +133,84 @@ func (t *etcdv3Registry) Register(serviceName string, node *registry.Node, opts 
 func nodePath(s, id string) string {
 	service := strings.Replace(s, "/", "-", -1)
 	node := strings.Replace(id, "/", "-", -1)
-	return path.Join(PREFIX, service, node)
+	return path.Join(SCHEMA, service, node)
 }
 
 func servicePath(s string) string {
-	return path.Join(PREFIX, strings.Replace(s, "/", "-", -1))
+	return path.Join(SCHEMA, strings.Replace(s, "/", "-", -1))
 }
 
 func (t *etcdv3Registry) Build(target resolver.Target, cc resolver.ClientConn, opts resolver.BuildOption) (resolver.Resolver, error) {
-
-	t.cc = cc
-	key := servicePath("/" + target.Scheme + "/" + target.Endpoint + "/")
-	go t.watch(key)
+	key := servicePath(target.Endpoint) + "/"
+	go t.watch(key, cc)
 
 	return t, nil
 }
 
 // Close closes the resolver.
 func (t etcdv3Registry) Close() {
-	log.Println("Close")
+	//log.Println("Close")
 }
 
 func (t etcdv3Registry) Scheme() string {
-	return PREFIX
+	return SCHEMA
 }
 
 func (t etcdv3Registry) ResolveNow(rn resolver.ResolveNowOption) {
-	log.Println("ResolveNow") // TODO check
+	// TODO check
+	//log.Println("ResolveNow")
 }
 
-func (t *etcdv3Registry) watch(keyPrefix string) {
-	var addrList []resolver.Address
+func (t *etcdv3Registry) watch(keyPrefix string, cc resolver.ClientConn) {
+	var addrMap = make(map[string]resolver.Address)
 
 	getResp, err := t.client.Get(context.Background(), keyPrefix, clientv3.WithPrefix())
 	if err != nil {
 		log.Println(err)
 	} else {
 		for i := range getResp.Kvs {
-			addrList = append(addrList, resolver.Address{Addr: strings.TrimPrefix(string(getResp.Kvs[i].Key), keyPrefix)})
+			key := string(getResp.Kvs[i].Key)
+			addr := string(getResp.Kvs[i].Value)
+			addrMap[key] = resolver.Address{Addr: addr}
 		}
 	}
 
-	t.cc.NewAddress(addrList)
+	cc.NewAddress(addrMapToList(addrMap))
 
 	rch := t.client.Watch(context.Background(), keyPrefix, clientv3.WithPrefix())
 	for n := range rch {
 		for _, ev := range n.Events {
-			addr := strings.TrimPrefix(string(ev.Kv.Key), keyPrefix)
+			key := string(ev.Kv.Key)
+			addr := string(ev.Kv.Value)
 			switch ev.Type {
 			case mvccpb.PUT:
-				if !exist(addrList, addr) {
-					addrList = append(addrList, resolver.Address{Addr: addr})
-					t.cc.NewAddress(addrList)
+				if _, ok := addrMap[key]; !ok {
+					addrMap[key] = resolver.Address{Addr: addr}
+					cc.NewAddress(addrMapToList(addrMap))
 				}
 			case mvccpb.DELETE:
-				if s, ok := remove(addrList, addr); ok {
-					addrList = s
-					t.cc.NewAddress(addrList)
+				if _, ok := addrMap[key]; ok {
+					delete(addrMap, key)
+					cc.NewAddress(addrMapToList(addrMap))
 				}
 			}
-			//log.Printf("%s %q : %q\n", ev.Type, ev.Kv.Key, ev.Kv.Value)
 		}
 	}
 }
 
-func exist(l []resolver.Address, addr string) bool {
-	for i := range l {
-		if l[i].Addr == addr {
-			return true
-		}
+func addrMapToList(addr map[string]resolver.Address) []resolver.Address {
+	var val []resolver.Address
+	for _, v := range addr {
+		val = append(val, v)
 	}
-	return false
-}
-
-func remove(s []resolver.Address, addr string) ([]resolver.Address, bool) {
-	for i := range s {
-		if s[i].Addr == addr {
-			s[i] = s[len(s)-1]
-			return s[:len(s)-1], true
-		}
-	}
-	return nil, false
+	return val
 }
 
 // UnRegister remove service from etcd
-func (t *etcdv3Registry) UnRegister(name string, addr string) {
+func (t *etcdv3Registry) Unregister(serviceName string, node *registry.Node) error {
 	if t.client != nil {
-		t.client.Delete(context.Background(), "/"+PREFIX+"/"+name+"/"+addr)
+		_, err := t.client.Delete(context.Background(), nodePath(serviceName, node.Id))
+		return err
 	}
+	return nil
 }

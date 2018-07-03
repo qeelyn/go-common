@@ -10,9 +10,6 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-// DialOption allows optional config for dialer
-type DialOption func(name string) (grpc.DialOption, error)
-
 // WithTracer traces rpc calls
 func WithTracer(t opentracing.Tracer) grpc.UnaryClientInterceptor {
 	return otgrpc.OpenTracingClientInterceptor(t)
@@ -23,20 +20,8 @@ func WithAuth() grpc.UnaryClientInterceptor {
 }
 
 // Dial returns a load balanced grpc client conn with tracing interceptor
-func Dial(name string, opts ...DialOption) (*grpc.ClientConn, error) {
-	dialopts := []grpc.DialOption{
-		grpc.WithInsecure(),
-	}
-
-	for _, fn := range opts {
-		opt, err := fn(name)
-		if err != nil {
-			return nil, fmt.Errorf("config error: %v", err)
-		}
-		dialopts = append(dialopts, opt)
-	}
-
-	conn, err := grpc.Dial(name, dialopts...)
+func Dial(name string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
+	conn, err := grpc.Dial(name, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to dial %s: %v", name, err)
 	}
@@ -44,10 +29,8 @@ func Dial(name string, opts ...DialOption) (*grpc.ClientConn, error) {
 	return conn, nil
 }
 
-func WithUnaryClientInterceptor(interceptors ...grpc.UnaryClientInterceptor) DialOption {
-	return func(name string) (grpc.DialOption, error) {
-		return grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(interceptors...)), nil
-	}
+func WithUnaryClientInterceptor(interceptors ...grpc.UnaryClientInterceptor) grpc.DialOption {
+	return grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(interceptors...))
 }
 
 func AuthUnaryInterceptor(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {

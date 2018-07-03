@@ -8,6 +8,7 @@ import (
 // The registry provides an interface for service discovery
 type Registry interface {
 	Register(serviceName string, node *Node, opts ...RegisterOption) error
+	Unregister(serviceName string, node *Node) error
 }
 
 type Node struct {
@@ -16,7 +17,7 @@ type Node struct {
 	Metadata map[string]string `json:"metadata"`
 }
 
-var DefaultRegistry func(opts ...Option) Registry
+var DefaultRegistry func(opts ...Option) (Registry, error)
 
 type Option func(*Options)
 
