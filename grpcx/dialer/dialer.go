@@ -4,15 +4,16 @@ import (
 	"context"
 	"fmt"
 	"github.com/grpc-ecosystem/go-grpc-middleware"
-	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
+	"github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
 	"github.com/opentracing/opentracing-go"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
 
-// WithTracer traces rpc calls
+// WithTracer traces rpc calls,the tracer interceptor must put the last
+// because the context  get value limit
 func WithTracer(t opentracing.Tracer) grpc.UnaryClientInterceptor {
-	return otgrpc.OpenTracingClientInterceptor(t)
+	return grpc_opentracing.UnaryClientInterceptor(grpc_opentracing.WithTracer(t))
 }
 
 func WithAuth() grpc.UnaryClientInterceptor {
@@ -48,18 +49,4 @@ func AuthUnaryInterceptor(ctx context.Context, method string, req, reply interfa
 	newCtx := metadata.NewOutgoingContext(ctx, md)
 
 	return invoker(newCtx, method, req, reply, cc, opts...)
-}
-
-func newUserContext(ctx context.Context) context.Context {
-	var md metadata.MD
-	if uid := ctx.Value("userid"); uid != nil {
-		md = metadata.Pairs("userid", uid.(string))
-	}
-	if oid := ctx.Value("orgid"); oid != nil {
-		umd := metadata.Pairs("orgId", oid.(string))
-		md = metadata.Join(md, umd)
-	}
-
-	rpcCtx := metadata.NewOutgoingContext(ctx, md)
-	return rpcCtx
 }

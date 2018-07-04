@@ -80,11 +80,16 @@ func Default(opts ...Option) (*Server, error) {
 
 	sins := WithUnaryServerInterceptor(
 		grpc_ctxtags.UnaryServerInterceptor(),
-		grpc_opentracing.UnaryServerInterceptor(grpc_opentracing.WithTracer(opentracing.GlobalTracer())),
 		grpc_prometheus.UnaryServerInterceptor)
 	sOptions.applyOption(sins)
 
 	sOptions.applyOption(opts...)
+
+	if sOptions.tracer != nil {
+		usi := grpc_opentracing.UnaryServerInterceptor(grpc_opentracing.WithTracer(sOptions.tracer))
+		sOptions.unaryServerInterceptors = append([]grpc.UnaryServerInterceptor{usi}, sOptions.unaryServerInterceptors...)
+	}
+
 	if sOptions.authFunc != nil {
 		sOptions.unaryServerInterceptors = append(sOptions.unaryServerInterceptors, grpc_auth.UnaryServerInterceptor(sOptions.authFunc))
 	}
