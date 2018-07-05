@@ -50,9 +50,5 @@
   version = "3.2.0"
 
 [[constraint]]
-  branch = "master"
-  name = "github.com/grpc-ecosystem/grpc-opentracing"
-
-[[constraint]]
   name = "github.com/coreos/etcd"
   version = "3.3.8"

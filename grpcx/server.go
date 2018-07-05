@@ -13,12 +13,14 @@ import (
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
 	"github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/opentracing/opentracing-go"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/qeelyn/go-common/auth"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"net"
+	"net/http"
 	"strconv"
 )
 
@@ -27,10 +29,12 @@ type Server struct {
 }
 
 type serverOptions struct {
-	tracer                  opentracing.Tracer
-	logger                  *zap.Logger
-	unaryServerInterceptors []grpc.UnaryServerInterceptor
-	authFunc                grpc_auth.AuthFunc
+	tracer                   opentracing.Tracer
+	logger                   *zap.Logger
+	unaryServerInterceptors  []grpc.UnaryServerInterceptor
+	streamServerInterceptors []grpc.StreamServerInterceptor
+	authFunc                 grpc_auth.AuthFunc
+	prometheus               bool
 }
 
 func (t *serverOptions) applyOption(opts ...Option) *serverOptions {
@@ -60,6 +64,12 @@ func WithUnaryServerInterceptor(intercoptors ...grpc.UnaryServerInterceptor) Opt
 	}
 }
 
+func WithStreamServerInterceptor(intercoptors ...grpc.StreamServerInterceptor) Option {
+	return func(options *serverOptions) {
+		options.streamServerInterceptors = append(options.streamServerInterceptors, intercoptors...)
+	}
+}
+
 func WithAuthFunc(authFunc grpc_auth.AuthFunc) Option {
 	return func(options *serverOptions) {
 		options.authFunc = authFunc
@@ -74,27 +84,38 @@ func NewServer(opts ...Option) *Server {
 	return srv
 }
 
-func Default(opts ...Option) (*Server, error) {
+// micro service stack support
+func Micro(opts ...Option) (*Server, error) {
 	var err error
-	sOptions := &serverOptions{}
+	sOptions := &serverOptions{
+		prometheus: true,
+	}
 
-	sins := WithUnaryServerInterceptor(
+	uins := WithUnaryServerInterceptor(
 		grpc_ctxtags.UnaryServerInterceptor(),
 		grpc_prometheus.UnaryServerInterceptor)
-	sOptions.applyOption(sins)
+	sins := WithStreamServerInterceptor(
+		grpc_ctxtags.StreamServerInterceptor(),
+		grpc_prometheus.StreamServerInterceptor,
+	)
+	sOptions.applyOption(uins, sins)
 
 	sOptions.applyOption(opts...)
 
 	if sOptions.tracer != nil {
 		usi := grpc_opentracing.UnaryServerInterceptor(grpc_opentracing.WithTracer(sOptions.tracer))
 		sOptions.unaryServerInterceptors = append([]grpc.UnaryServerInterceptor{usi}, sOptions.unaryServerInterceptors...)
+		ssi := grpc_opentracing.StreamServerInterceptor(grpc_opentracing.WithTracer(sOptions.tracer))
+		sOptions.streamServerInterceptors = append([]grpc.StreamServerInterceptor{ssi}, sOptions.streamServerInterceptors...)
 	}
 
 	if sOptions.authFunc != nil {
 		sOptions.unaryServerInterceptors = append(sOptions.unaryServerInterceptors, grpc_auth.UnaryServerInterceptor(sOptions.authFunc))
+		sOptions.streamServerInterceptors = append(sOptions.streamServerInterceptors, grpc_auth.StreamServerInterceptor(sOptions.authFunc))
 	}
 	// recovery at last
 	sOptions.applyOption(WithUnaryServerInterceptor(grpc_recovery.UnaryServerInterceptor()))
+	sOptions.applyOption(WithStreamServerInterceptor(grpc_recovery.StreamServerInterceptor()))
 	srv := &Server{
 		Option: sOptions,
 	}
@@ -105,6 +126,7 @@ func Default(opts ...Option) (*Server, error) {
 		}
 	}
 	sOptions.unaryServerInterceptors = append(sOptions.unaryServerInterceptors, grpc_zap.UnaryServerInterceptor(srv.Option.logger))
+	sOptions.streamServerInterceptors = append(sOptions.streamServerInterceptors, grpc_zap.StreamServerInterceptor(srv.Option.logger))
 	grpc_zap.ReplaceGrpcLogger(srv.Option.logger)
 	return srv, err
 }
@@ -117,6 +139,12 @@ func (t Server) BuildGrpcServer() *grpc.Server {
 		))
 	}
 	rpcSrv := grpc.NewServer(opts...)
+	if t.Option.prometheus {
+		// After all your registrations, make sure all of the Prometheus metrics are initialized.
+		grpc_prometheus.Register(rpcSrv)
+		// Register Prometheus metrics handler.
+		http.Handle("/metrics", promhttp.Handler())
+	}
 	return rpcSrv
 }
 
