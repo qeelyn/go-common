@@ -12,92 +12,57 @@ import (
 	"github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
 	"github.com/grpc-ecosystem/go-grpc-prometheus"
-	"github.com/opentracing/opentracing-go"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/qeelyn/go-common/auth"
+	"github.com/qeelyn/go-common/grpcx/registry"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"log"
 	"net"
 	"net/http"
 	"strconv"
 )
 
 type Server struct {
+	Name   string
 	Option *serverOptions
 }
 
-type serverOptions struct {
-	tracer                   opentracing.Tracer
-	logger                   *zap.Logger
-	unaryServerInterceptors  []grpc.UnaryServerInterceptor
-	streamServerInterceptors []grpc.StreamServerInterceptor
-	authFunc                 grpc_auth.AuthFunc
-	prometheus               bool
-}
-
-func (t *serverOptions) applyOption(opts ...Option) *serverOptions {
-	for _, v := range opts {
-		v(t)
-	}
-	return t
-}
-
-type Option func(*serverOptions)
-
-func WithLogger(logger *zap.Logger) Option {
-	return func(options *serverOptions) {
-		options.logger = logger
-	}
-}
-
-func WithTracer(tracer opentracing.Tracer) Option {
-	return func(options *serverOptions) {
-		options.tracer = tracer
-	}
-}
-
-func WithUnaryServerInterceptor(intercoptors ...grpc.UnaryServerInterceptor) Option {
-	return func(options *serverOptions) {
-		options.unaryServerInterceptors = append(options.unaryServerInterceptors, intercoptors...)
-	}
-}
-
-func WithStreamServerInterceptor(intercoptors ...grpc.StreamServerInterceptor) Option {
-	return func(options *serverOptions) {
-		options.streamServerInterceptors = append(options.streamServerInterceptors, intercoptors...)
-	}
-}
-
-func WithAuthFunc(authFunc grpc_auth.AuthFunc) Option {
-	return func(options *serverOptions) {
-		options.authFunc = authFunc
-	}
-}
-
-func NewServer(opts ...Option) *Server {
+func NewServer(name string, opts ...Option) *Server {
 	srv := &Server{
+		Name:   name,
 		Option: &serverOptions{},
 	}
 	srv.Option.applyOption(opts...)
 	return srv
 }
 
-// micro service stack support
-func Micro(opts ...Option) (*Server, error) {
+// micro service stack support.
+// if you use prometheus, the http server implement yourself
+// example:
+//   httpServer := &http.Server{
+// 		Handler: promhttp.HandlerFor(reg, promhttp.HandlerOpts{}),
+// 		Addr: fmt.Sprintf("0.0.0.0:%d", 9092)
+// 	 }
+//
+//	go func() {
+//		if err := httpServer.ListenAndServe(); err != nil {
+//			log.Fatal("Unable to start a http server.")
+//		}
+//	}()
+func Micro(name string, opts ...Option) (*Server, error) {
 	var err error
-	sOptions := &serverOptions{
-		prometheus: true,
-	}
+	sOptions := &serverOptions{}
 
 	uins := WithUnaryServerInterceptor(
 		grpc_ctxtags.UnaryServerInterceptor(),
-		grpc_prometheus.UnaryServerInterceptor)
+	)
 	sins := WithStreamServerInterceptor(
 		grpc_ctxtags.StreamServerInterceptor(),
-		grpc_prometheus.StreamServerInterceptor,
 	)
+
 	sOptions.applyOption(uins, sins)
 
 	sOptions.applyOption(opts...)
@@ -109,6 +74,11 @@ func Micro(opts ...Option) (*Server, error) {
 		sOptions.streamServerInterceptors = append([]grpc.StreamServerInterceptor{ssi}, sOptions.streamServerInterceptors...)
 	}
 
+	if sOptions.prometheus {
+		sOptions.unaryServerInterceptors = append(sOptions.unaryServerInterceptors, grpc_prometheus.UnaryServerInterceptor)
+		sOptions.streamServerInterceptors = append(sOptions.streamServerInterceptors, grpc_prometheus.StreamServerInterceptor)
+	}
+
 	if sOptions.authFunc != nil {
 		sOptions.unaryServerInterceptors = append(sOptions.unaryServerInterceptors, grpc_auth.UnaryServerInterceptor(sOptions.authFunc))
 		sOptions.streamServerInterceptors = append(sOptions.streamServerInterceptors, grpc_auth.StreamServerInterceptor(sOptions.authFunc))
@@ -117,6 +87,7 @@ func Micro(opts ...Option) (*Server, error) {
 	sOptions.applyOption(WithUnaryServerInterceptor(grpc_recovery.UnaryServerInterceptor()))
 	sOptions.applyOption(WithStreamServerInterceptor(grpc_recovery.StreamServerInterceptor()))
 	srv := &Server{
+		Name:   name,
 		Option: sOptions,
 	}
 	if srv.Option.logger == nil {
@@ -139,12 +110,6 @@ func (t Server) BuildGrpcServer() *grpc.Server {
 		))
 	}
 	rpcSrv := grpc.NewServer(opts...)
-	if t.Option.prometheus {
-		// After all your registrations, make sure all of the Prometheus metrics are initialized.
-		grpc_prometheus.Register(rpcSrv)
-		// Register Prometheus metrics handler.
-		http.Handle("/metrics", promhttp.Handler())
-	}
 	return rpcSrv
 }
 
@@ -153,7 +118,40 @@ func (t Server) Run(rpcSrv *grpc.Server, listen string) error {
 	if err != nil {
 		return fmt.Errorf("failed to listen: %v", err)
 	}
+
+	if t.Option.prometheus {
+		t.StartPrometheus(rpcSrv)
+	}
+
+	if t.Option.register != nil {
+		node := &registry.Node{Id: t.Name, Address: listen}
+		if err = t.Option.register.Register(t.Option.registryServiceName, node); err != nil {
+			return err
+		}
+		defer t.Option.register.Unregister(t.Option.registryServiceName, node)
+	}
+
+	log.Printf("%s tcp server will be ready for listening at:%s", t.Name, listen)
 	return rpcSrv.Serve(lis)
+}
+
+func (t Server) StartPrometheus(rpcSrv *grpc.Server) {
+	// After all your registrations, make sure all of the Prometheus metrics are initialized.
+	grpc_prometheus.Register(rpcSrv)
+	// standalone http server
+	if t.Option.prometheusListen != "" {
+		// Register Prometheus metrics handler.
+		httpServer := &http.Server{
+			Handler: promhttp.Handler(),
+			Addr:    t.Option.prometheusListen,
+		}
+		go func() {
+			log.Printf("starting prometheus http server at:%s", httpServer.Addr)
+			if err := httpServer.ListenAndServe(); err != nil {
+				log.Fatal("Unable to start a http server.")
+			}
+		}()
+	}
 }
 
 func AuthFunc(keyFile string) grpc_auth.AuthFunc {
