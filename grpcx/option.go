@@ -19,6 +19,7 @@ type serverOptions struct {
 	prometheusListen         string
 	register                 registry.Registry
 	registryServiceName      string
+	registryListen           string
 }
 
 func (t *serverOptions) applyOption(opts ...Option) *serverOptions {
@@ -71,9 +72,10 @@ func WithPrometheus(listen string) Option {
 	}
 }
 
-func WithRegistry(register registry.Registry, serviceName string) Option {
+func WithRegistry(register registry.Registry, serviceName string, listen string) Option {
 	return func(options *serverOptions) {
 		options.register = register
 		options.registryServiceName = serviceName
+		options.registryListen = listen
 	}
 }
