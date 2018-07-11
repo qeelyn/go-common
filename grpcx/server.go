@@ -55,50 +55,49 @@ func NewServer(name string, opts ...Option) *Server {
 func Micro(name string, opts ...Option) (*Server, error) {
 	var err error
 	sOptions := &serverOptions{}
-
-	uins := WithUnaryServerInterceptor(
-		grpc_ctxtags.UnaryServerInterceptor(),
-	)
-	sins := WithStreamServerInterceptor(
-		grpc_ctxtags.StreamServerInterceptor(),
-	)
-
-	sOptions.applyOption(uins, sins)
-
 	sOptions.applyOption(opts...)
-
-	if sOptions.tracer != nil {
-		usi := grpc_opentracing.UnaryServerInterceptor(grpc_opentracing.WithTracer(sOptions.tracer))
-		sOptions.unaryServerInterceptors = append([]grpc.UnaryServerInterceptor{usi}, sOptions.unaryServerInterceptors...)
-		ssi := grpc_opentracing.StreamServerInterceptor(grpc_opentracing.WithTracer(sOptions.tracer))
-		sOptions.streamServerInterceptors = append([]grpc.StreamServerInterceptor{ssi}, sOptions.streamServerInterceptors...)
-	}
-
-	if sOptions.prometheus {
-		sOptions.unaryServerInterceptors = append(sOptions.unaryServerInterceptors, grpc_prometheus.UnaryServerInterceptor)
-		sOptions.streamServerInterceptors = append(sOptions.streamServerInterceptors, grpc_prometheus.StreamServerInterceptor)
-	}
-
-	if sOptions.authFunc != nil {
-		sOptions.unaryServerInterceptors = append(sOptions.unaryServerInterceptors, grpc_auth.UnaryServerInterceptor(sOptions.authFunc))
-		sOptions.streamServerInterceptors = append(sOptions.streamServerInterceptors, grpc_auth.StreamServerInterceptor(sOptions.authFunc))
-	}
-	// recovery at last
-	sOptions.applyOption(WithUnaryServerInterceptor(grpc_recovery.UnaryServerInterceptor()))
-	sOptions.applyOption(WithStreamServerInterceptor(grpc_recovery.StreamServerInterceptor()))
 	srv := &Server{
 		Name:   name,
 		Option: sOptions,
 	}
-	if srv.Option.logger == nil {
-		srv.Option.logger, err = zap.NewDevelopment()
+
+	uins := []grpc.UnaryServerInterceptor{grpc_ctxtags.UnaryServerInterceptor()}
+	sins := []grpc.StreamServerInterceptor{grpc_ctxtags.StreamServerInterceptor()}
+
+	if sOptions.tracer != nil {
+		uins = append(uins, grpc_opentracing.UnaryServerInterceptor(grpc_opentracing.WithTracer(sOptions.tracer)))
+		sins = append(sins, grpc_opentracing.StreamServerInterceptor(grpc_opentracing.WithTracer(sOptions.tracer)))
+	}
+
+	if sOptions.logger == nil {
+		sOptions.logger, err = zap.NewDevelopment()
 		if err != nil {
 			return nil, err
 		}
+		uins = append(uins, grpc_zap.UnaryServerInterceptor(sOptions.logger))
+		sins = append(sins, grpc_zap.StreamServerInterceptor(sOptions.logger))
+		grpc_zap.ReplaceGrpcLogger(sOptions.logger)
 	}
-	sOptions.unaryServerInterceptors = append(sOptions.unaryServerInterceptors, grpc_zap.UnaryServerInterceptor(srv.Option.logger))
-	sOptions.streamServerInterceptors = append(sOptions.streamServerInterceptors, grpc_zap.StreamServerInterceptor(srv.Option.logger))
-	grpc_zap.ReplaceGrpcLogger(srv.Option.logger)
+	// tag and tracer must at first
+	sOptions.unaryServerInterceptors = append(uins, sOptions.unaryServerInterceptors...)
+	sOptions.streamServerInterceptors = append(sins, sOptions.streamServerInterceptors...)
+
+	if sOptions.prometheus {
+		sOptions.applyOption(WithUnaryServerInterceptor(grpc_prometheus.UnaryServerInterceptor))
+		sOptions.applyOption(WithStreamServerInterceptor(grpc_prometheus.StreamServerInterceptor))
+
+	}
+
+	if sOptions.authFunc != nil {
+		sOptions.applyOption(WithUnaryServerInterceptor(grpc_auth.UnaryServerInterceptor(sOptions.authFunc)))
+		sOptions.applyOption(WithStreamServerInterceptor(grpc_auth.StreamServerInterceptor(sOptions.authFunc)))
+	}
+
+	sOptions.applyOption(WithUnaryServerInterceptor(grpc_recovery.UnaryServerInterceptor(
+		grpc_recovery.WithRecoveryHandler(sOptions.Recovery))))
+	sOptions.applyOption(WithStreamServerInterceptor(grpc_recovery.StreamServerInterceptor(
+		grpc_recovery.WithRecoveryHandler(sOptions.Recovery))))
+
 	return srv, err
 }
 

@@ -2,6 +2,7 @@ package grpcx
 
 import (
 	"github.com/grpc-ecosystem/go-grpc-middleware/auth"
+	"github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	"github.com/opentracing/opentracing-go"
 	"github.com/qeelyn/go-common/grpcx/registry"
 	"go.uber.org/zap"
@@ -20,6 +21,7 @@ type serverOptions struct {
 	register                 registry.Registry
 	registryServiceName      string
 	registryListen           string
+	Recovery                 grpc_recovery.RecoveryHandlerFunc
 }
 
 func (t *serverOptions) applyOption(opts ...Option) *serverOptions {
