@@ -3,7 +3,7 @@ package tracing
 import (
 	"fmt"
 	"github.com/opentracing/opentracing-go"
-	"github.com/qeelyn/gin-contrib/ginzap"
+	"github.com/qeelyn/go-common/logger"
 	"github.com/uber/jaeger-client-go"
 	jaegercfg "github.com/uber/jaeger-client-go/config"
 	"github.com/uber/jaeger-lib/metrics"
@@ -27,7 +27,7 @@ func NewTracer(config *jaegercfg.Configuration, serviceName string) opentracing.
 }
 
 type jaegerLoggerAdapter struct {
-	logger *ginzap.Logger
+	logger *logger.Logger
 }
 
 func (l jaegerLoggerAdapter) Error(msg string) {

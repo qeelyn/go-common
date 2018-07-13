@@ -177,12 +177,6 @@
   revision = "7d6f385de8bea29190f15ba9931442a0eaef9af7"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/qeelyn/gin-contrib"
-  packages = ["ginzap"]
-  revision = "550747460ad768c17784970b37fb6a18c9b0f3f2"
-
-[[projects]]
   name = "github.com/uber/jaeger-client-go"
   packages = [
     ".",
@@ -347,6 +341,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "83cd0cd811736e6feecd303ebc6c1ddf59a55a34557c95d14d6aae8a51cf0c78"
+  inputs-digest = "9e6b6834c6759ecf628d1c0a22ab041d2f3a10b087f0e8d1bfc4e53990be7400"
   solver-name = "gps-cdcl"
   solver-version = 1
