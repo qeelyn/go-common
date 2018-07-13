@@ -177,7 +177,7 @@ func AuthFunc(keyFile string) grpc_auth.AuthFunc {
 		if id, err := validator.Validate(ctx, token); err != nil {
 			return nil, status.Error(codes.Unauthenticated, err.Error())
 		} else {
-			return context.WithValue(ctx, "user", id), nil
+			return context.WithValue(ctx, auth.ActiveUserContextKey, id), nil
 		}
 	}
 }
