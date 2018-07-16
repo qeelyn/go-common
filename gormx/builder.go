@@ -5,7 +5,25 @@ import (
 	"github.com/qeelyn/go-common/protobuf/paginate"
 	"github.com/qeelyn/go-common/protobuf/request"
 	"strconv"
+	"time"
 )
+
+func NewDb(config map[string]interface{}) (*gorm.DB, error) {
+	orm, err := gorm.Open(config["dialect"].(string), config["dsn"].(string))
+	if err != nil {
+		return orm, err
+	}
+	if _, ok := config["maxidleconns"]; ok {
+		orm.DB().SetMaxIdleConns(config["maxidleconns"].(int))
+	}
+	if _, ok := config["maxopenconns"]; ok {
+		orm.DB().SetMaxOpenConns(config["maxopenconns"].(int))
+	}
+	if _, ok := config["connmaxlifetime"]; ok {
+		orm.DB().SetConnMaxLifetime(time.Duration(config["connmaxlifetime"].(int)) * time.Second)
+	}
+	return orm, nil
+}
 
 // 配合gorm的查询构建器,方便做一个分页相关的处理,及数据库获取数据
 type Builder struct {
@@ -21,7 +39,7 @@ type Builder struct {
 }
 
 // 初始化builder,如果需要统计时,请先初始化DB.Table或Model
-func NewBuild(db *gorm.DB) *Builder {
+func NewBuilder(db *gorm.DB) *Builder {
 	return &Builder{
 		db: db,
 	}
@@ -149,7 +167,7 @@ func HandleNodeRequest(db *gorm.DB, id interface{}, ls interface{}, req *request
 	if id != "" {
 		db = db.Where("id = ?", id)
 	}
-	builder := NewBuild(db)
+	builder := NewBuilder(db)
 	builder.Field(req.Fields).Where(req.Where, req.WhereParams).Order(req.Order).Prepare()
 	if err := builder.GetDb().Take(ls).Error; err != nil {
 		return builder, err
@@ -169,7 +187,7 @@ func HandleListFetchRequest(db *gorm.DB, ls interface{}, req *request.FetchReque
 			db = db.Where("id in (?)", req.Ids)
 		}
 	}
-	builder := NewBuild(db)
+	builder := NewBuilder(db)
 	builder.Field(req.Fields).Where(req.Where, req.WhereParams).
 		PaginateOffSet(req.Paginate, req.NeedTotal).
 		Order(req.Order).

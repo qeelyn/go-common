@@ -1,0 +1,21 @@
+appname: test
+listen: ":8000"
+appmode: debug
+log:
+  file:
+    filename: "runtime/api.log"
+    maxsize: 500
+    maxbackups: 3
+    maxage: 28
+    level: -1
+  access:
+    filename: "runtime/api-access.log"
+    maxsize: 200
+    maxbackups: 3
+    maxage: 28
+    level: 0
+
+error-template: "config/errors.zh.yaml"
+
+web:
+  staticdir: public
