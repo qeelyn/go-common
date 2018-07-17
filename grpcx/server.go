@@ -74,10 +74,11 @@ func Micro(name string, opts ...Option) (*Server, error) {
 		if err != nil {
 			return nil, err
 		}
-		uins = append(uins, grpc_zap.UnaryServerInterceptor(sOptions.logger))
-		sins = append(sins, grpc_zap.StreamServerInterceptor(sOptions.logger))
-		grpc_zap.ReplaceGrpcLogger(sOptions.logger)
 	}
+	uins = append(uins, grpc_zap.UnaryServerInterceptor(sOptions.logger))
+	sins = append(sins, grpc_zap.StreamServerInterceptor(sOptions.logger))
+	grpc_zap.ReplaceGrpcLogger(sOptions.logger)
+
 	// tag and tracer must at first
 	sOptions.unaryServerInterceptors = append(uins, sOptions.unaryServerInterceptors...)
 	sOptions.streamServerInterceptors = append(sins, sOptions.streamServerInterceptors...)
