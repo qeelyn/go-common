@@ -22,7 +22,7 @@ func LoadConfig(configFile string) (*viper.Viper, error) {
 	if err != nil {
 		return nil, err
 	}
-	configPath := path.Dir(realPath)
+	configPath := path.Dir(filepath.ToSlash(realPath))
 	fn := strings.Split(file.Name(), ".")
 	filename := fn[0]
 	ext := fn[1]
@@ -40,13 +40,11 @@ func LoadConfig(configFile string) (*viper.Viper, error) {
 	}
 	// local
 	localConfig := path.Join(configPath, filename+"-local."+ext)
-	if _, err := os.Stat(localConfig); err != nil {
-		return nil, err
-	}
-
-	cnf.SetConfigName(filename + "-local")
-	if err := cnf.MergeInConfig(); err != nil {
-		return nil, err
+	if _, err := os.Stat(localConfig); err == nil {
+		cnf.SetConfigName(filename + "-local")
+		if err := cnf.MergeInConfig(); err != nil {
+			return nil, err
+		}
 	}
 
 	switch cnf.GetString("appmode") {
