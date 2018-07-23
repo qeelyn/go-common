@@ -34,7 +34,10 @@ func (t *Date) UnmarshalGraphQL(input interface{}) error {
 	}
 }
 
-func (t Date) ToString() string {
+func (t *Date) TimeString() string {
+	if t == nil {
+		return ""
+	}
 	return fmt.Sprintf("%d-%02d-%02d", t.Year, t.Month, t.Day)
 }
 

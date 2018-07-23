@@ -11,7 +11,7 @@ func TestDate_ToString(t *testing.T) {
 		Month: 1,
 		Day:   11,
 	}
-	if d.ToString() != "2018-01-11" {
+	if d.TimeString() != "2018-01-11" {
 		t.Error("tostring error")
 	}
 }
@@ -20,7 +20,7 @@ func TestDate_UnmarshalGraphQL(t *testing.T) {
 	expect := "2018-01-11"
 	d := &date.Date{}
 	d.UnmarshalGraphQL(expect)
-	if d.ToString() != expect {
+	if d.TimeString() != expect {
 		t.Error()
 	}
 }
