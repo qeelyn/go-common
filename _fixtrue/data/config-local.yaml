@@ -1,5 +1,4 @@
 appname: test
-listen: ":8000"
 appmode: debug
 log:
   file:

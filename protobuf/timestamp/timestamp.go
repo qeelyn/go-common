@@ -1,12 +1,12 @@
 package timestamp
 
 import (
-	"github.com/golang/protobuf/ptypes/timestamp"
-	"github.com/golang/protobuf/ptypes"
-	"time"
-	"fmt"
 	"database/sql/driver"
 	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes"
+	"github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/qeelyn/go-common/protobuf/errors"
+	"time"
 )
 
 type Timestamp timestamp.Timestamp
@@ -43,31 +43,31 @@ func (Timestamp) ImplementsGraphQLType(name string) bool {
 }
 
 func (t *Timestamp) UnmarshalGraphQL(input interface{}) error {
-	switch input := input.(type) {
+	switch in := input.(type) {
 	case *Timestamp:
-		t = input
+		t = in
 		return nil
 	case Timestamp:
-		t = &input
+		t = &in
 		return nil
 	case time.Time:
-		t = TimeToTimestamp(input)
+		t = TimeToTimestamp(in)
 		return nil
 	case string:
-		if val, err := time.Parse(time.RFC3339, input); err != nil {
+		if val, err := time.Parse(time.RFC3339, in); err != nil {
 			return err
 		} else {
 			t = TimeToTimestamp(val)
 			return nil
 		}
 	case int:
-		t = TimeToTimestamp(time.Unix(int64(input), 0))
+		t = TimeToTimestamp(time.Unix(int64(in), 0))
 		return nil
 	case float64:
-		t = TimeToTimestamp(time.Unix(int64(input), 0))
+		t = TimeToTimestamp(time.Unix(int64(in), 0))
 		return nil
 	default:
-		return fmt.Errorf("wrong type")
+		return errors.GqlInputWrongType()
 	}
 }
 
