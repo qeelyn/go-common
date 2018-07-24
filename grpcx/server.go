@@ -2,7 +2,6 @@ package grpcx
 
 import (
 	"context"
-	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/go-grpc-middleware/auth"
@@ -116,7 +115,7 @@ func (t Server) BuildGrpcServer() *grpc.Server {
 func (t Server) Run(rpcSrv *grpc.Server, listen string) error {
 	lis, err := net.Listen("tcp", listen)
 	if err != nil {
-		return fmt.Errorf("failed to listen: %v", err)
+		panic(err)
 	}
 
 	if t.Option.prometheus {
