@@ -22,8 +22,8 @@ func (*StringValue) ImplementsGraphQLType(name string) bool {
 	return name == "String"
 }
 
-func (t *StringValue)UnmarshalGraphQL(input interface{}) error{
-	if v,ok := input.(string);!ok{
+func (t *StringValue) UnmarshalGraphQL(input interface{}) error {
+	if v, ok := input.(string); !ok {
 		return errors.New("input value is not string")
 	} else {
 		*t = StringValue(v)
@@ -31,5 +31,12 @@ func (t *StringValue)UnmarshalGraphQL(input interface{}) error{
 	}
 }
 
-
 type BytesValue []byte
+
+func WrapFloat64(f *float64) *DoubleValue {
+	if f == nil {
+		return nil
+	}
+	ret := DoubleValue(*f)
+	return &ret
+}
