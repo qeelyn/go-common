@@ -2,17 +2,10 @@ package date
 
 import (
 	"fmt"
-	"github.com/golang/protobuf/proto"
 	"time"
 
 	"github.com/qeelyn/go-common/protobuf/errors"
 )
-
-type Date struct {
-	Year  int32 `protobuf:"varint,1,opt,name=year" json:"year,omitempty"`
-	Month int32 `protobuf:"varint,2,opt,name=month" json:"month,omitempty"`
-	Day   int32 `protobuf:"varint,3,opt,name=day" json:"day,omitempty"`
-}
 
 func (Date) ImplementsGraphQLType(name string) bool {
 	return name == "Date"
@@ -39,15 +32,4 @@ func (t *Date) TimeString() string {
 		return ""
 	}
 	return fmt.Sprintf("%d-%02d-%02d", t.Year, t.Month, t.Day)
-}
-
-// proto message
-func (t *Date) Reset() {
-	*t = Date{}
-}
-
-func (*Date) ProtoMessage() {}
-
-func (t *Date) String() string {
-	return proto.CompactTextString(t)
 }
