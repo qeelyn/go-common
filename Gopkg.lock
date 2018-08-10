@@ -290,7 +290,10 @@
 
 [[projects]]
   name = "github.com/vmihailenco/msgpack"
-  packages = ["codes"]
+  packages = [
+    ".",
+    "codes"
+  ]
   revision = "6ab02c0ddf38d837488a746aa8709f6ecffc2fde"
   version = "v3.3.2"
 
@@ -423,12 +426,6 @@
   version = "v2.1"
 
 [[projects]]
-  name = "gopkg.in/vmihailenco/msgpack.v3"
-  packages = ["."]
-  revision = "6ab02c0ddf38d837488a746aa8709f6ecffc2fde"
-  version = "v3.3.2"
-
-[[projects]]
   name = "gopkg.in/yaml.v2"
   packages = ["."]
   revision = "5420a8b6744d3b0345ab293f6fcba19c978f1183"
@@ -437,6 +434,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "eb8b44edeffa40cbf571daa122e43c2f65c80f841605723a35281e4fc5d55cf3"
+  inputs-digest = "333ba0ac95c8ea27b35b362e30b5818f741213d00a387bf7395654e611f30429"
   solver-name = "gps-cdcl"
   solver-version = 1

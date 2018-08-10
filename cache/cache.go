@@ -1,14 +1,14 @@
 package cache
 
 import (
-	"time"
 	"fmt"
-	"gopkg.in/vmihailenco/msgpack.v3"
+	"github.com/vmihailenco/msgpack"
+	"time"
 )
 
 type Cache interface {
 	// get cached value by key.
-	Get(key string,dest interface{}) error
+	Get(key string, dest interface{}) error
 	// GetMulti is a batch version of Get.
 	GetMulti(keys []string) []interface{}
 	// set cached value with key and expire time.
@@ -77,5 +77,3 @@ func (t *Codec) Marshal(v interface{}) ([]byte, error) {
 func (t *Codec) Unmarshal(b []byte, v interface{}) error {
 	return msgpack.Unmarshal(b, v)
 }
-
-
