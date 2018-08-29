@@ -40,12 +40,11 @@ require (
 	go.uber.org/atomic v1.3.2 // indirect
 	go.uber.org/multierr v1.1.0 // indirect
 	go.uber.org/zap v1.8.0
-	golang.org/x/crypto v0.0.0-20180820150726-614d502a4dac // indirect
 	golang.org/x/net v0.0.0-20180811021610-c39426892332
 	golang.org/x/sys v0.0.0-20180810173357-98c5dad5d1a0 // indirect
 	golang.org/x/text v0.3.0 // indirect
 	google.golang.org/appengine v1.1.0 // indirect
-	google.golang.org/genproto v0.0.0-20180817151627-c66870c02cf8 // indirect
+	google.golang.org/genproto v0.0.0-20180808183934-383e8b2c3b9e // indirect
 	google.golang.org/grpc v1.14.0
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0-20170531160350-a96e63847dc3
 	gopkg.in/yaml.v2 v2.2.1 // indirect
@@ -56,4 +55,6 @@ replace (
 	golang.org/x/sys => github.com/golang/sys v0.0.0-20180810173357-98c5dad5d1a0
 	golang.org/x/text => github.com/golang/text v0.3.0
 	google.golang.org/appengine => github.com/golang/appengine v1.1.0
+	google.golang.org/genproto => github.com/google/go-genproto v0.0.0-20180808183934-383e8b2c3b9e
+	google.golang.org/grpc => github.com/grpc/grpc-go v1.14.0
 )
