@@ -61,7 +61,7 @@ func ParseOptions(opts ...options.Option) *options.Options {
 // if use remote must set NewRemoteFunc
 func LoadConfig(opts *options.Options) (*viper.Viper, error) {
 	if len(opts.Addrs) > 0 {
-		LoadRemoteConfig(opts)
+		return LoadRemoteConfig(opts)
 	}
 	return LoadLocalConfig(opts)
 }

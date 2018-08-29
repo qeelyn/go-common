@@ -2,6 +2,7 @@ package config_test
 
 import (
 	"github.com/qeelyn/go-common/config"
+	"github.com/qeelyn/go-common/config/etcdv3"
 	"github.com/qeelyn/go-common/config/options"
 	"io/ioutil"
 	"log"
@@ -17,7 +18,32 @@ func TestParseOptions(t *testing.T) {
 }
 
 func TestLoadConfig(t *testing.T) {
-
+	//local
+	opts := &options.Options{
+		Path:     "../_fixtrue/data",
+		FileName: "config.yaml",
+	}
+	cnf, err := config.LoadConfig(opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !cnf.IsSet("appmode") {
+		t.Error("miss appmode")
+	}
+	//remote
+	opts = &options.Options{
+		Addrs:    []string{"127.0.0.1:2379"},
+		Path:     "go-common",
+		FileName: "config.yaml",
+	}
+	etcdv3.Build(opts)
+	cnf, err = config.LoadConfig(opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !cnf.IsSet("appmode") {
+		t.Error("miss appmode")
+	}
 }
 
 func TestLoadLocalConfig(t *testing.T) {
