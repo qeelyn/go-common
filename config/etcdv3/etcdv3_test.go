@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"github.com/qeelyn/go-common/config/etcdv3"
 	"github.com/qeelyn/go-common/config/options"
+	"github.com/qeelyn/go-common/grpcx/registry"
+	retcd3 "github.com/qeelyn/go-common/grpcx/registry/etcdv3"
 	"github.com/spf13/viper"
 	"os/exec"
 	"testing"
@@ -47,7 +49,11 @@ func ectdPut(t *testing.T) {
 }
 
 func TestEtcdConfigProvider_WatchChannel(t *testing.T) {
-	etcdp, err := etcdv3.NewEtcdConfigProvider(&options.Options{Addrs: []string{"127.0.0.1:2379"}})
+	rg, err := retcd3.NewRegistry(registry.Dsn("127.0.0.1:2379"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	etcdp, err := etcdv3.NewEtcdConfigProvider(&options.Options{Registry: rg})
 	if err != nil {
 		t.Fatal(err)
 	}

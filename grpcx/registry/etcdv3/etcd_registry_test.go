@@ -2,7 +2,9 @@ package etcdv3_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"github.com/coreos/etcd/clientv3"
 	"github.com/qeelyn/go-common/grpcx/internal/mock"
 	"github.com/qeelyn/go-common/grpcx/internal/mock/prototest"
 	"github.com/qeelyn/go-common/grpcx/registry"
@@ -17,6 +19,13 @@ func init() {
 	go mock.NewMockDiscoveryServer(":12345", "default")
 }
 
+func TestParse(t *testing.T) {
+	js := `{"auto-sync-interval":100}`
+	cnf := &clientv3.Config{}
+	json.Unmarshal([]byte(js), cnf)
+	t.Log(cnf.AutoSyncInterval)
+}
+
 func TestEtcdv3Registry_Build(t *testing.T) {
 	r, _ := etcdv3.NewRegistry()
 	b := r.(resolver.Builder)
@@ -29,8 +38,26 @@ func TestEtcdv3Registry_Build(t *testing.T) {
 
 }
 
+func TestNewRegistry(t *testing.T) {
+	if _, err := etcdv3.NewRegistry(); err != nil {
+		t.Error(err)
+	}
+
+	r, err := etcdv3.NewRegistry(
+		registry.Dsn("127.0.0.1:2379?username=qsli&password=123456&dial-timeout=7200"),
+	)
+	if err != nil {
+		t.Error(err)
+	}
+	if r == nil {
+		t.Error("instance init error")
+	}
+
+	t.Log(r)
+}
+
 func TestEtcdv3Registry_Register(t *testing.T) {
-	r, err := etcdv3.NewRegistry(registry.Timeout(5 * time.Minute))
+	r, err := etcdv3.NewRegistry()
 	if err != nil {
 		t.Error(err)
 	}
@@ -44,7 +71,7 @@ func TestMulti(t *testing.T) {
 	//
 	go mock.NewMockDiscoveryServer(":12346", "n2")
 	go mock.NewMockDiscoveryServer(":12347", "n3")
-	r, _ := etcdv3.NewRegistry(registry.Timeout(30 * time.Second))
+	r, _ := etcdv3.NewRegistry()
 	b := r.(resolver.Builder)
 	resolver.Register(b)
 	//d1

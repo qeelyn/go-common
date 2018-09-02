@@ -3,7 +3,6 @@ package etcdv3
 import (
 	"bytes"
 	"context"
-	"crypto/tls"
 	"errors"
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/mvcc/mvccpb"
@@ -11,14 +10,11 @@ import (
 	"github.com/spf13/viper"
 	"io"
 	"log"
-	"time"
 )
 
 type etcdConfigProvider struct {
-	Options  *options.Options
-	client   *clientv3.Client
-	register map[string]uint64
-	leases   map[string]clientv3.LeaseID
+	Options *options.Options
+	client  *clientv3.Client
 }
 
 func Build(options *options.Options) error {
@@ -31,48 +27,14 @@ func Build(options *options.Options) error {
 }
 
 func NewEtcdConfigProvider(options *options.Options) (*etcdConfigProvider, error) {
-	cnf := clientv3.Config{
-		Endpoints: []string{"127.0.0.1:2379"},
+	client, ok := options.Registry.GetClient().(*clientv3.Client)
+	if !ok {
+		return nil, errors.New("registry client is not an etcd v3 client")
 	}
-
-	if options.Timeout == 0 {
-		options.Timeout = 5 * time.Second
-	}
-
-	if options.Secure || options.TLSConfig != nil {
-		tlsConfig := options.TLSConfig
-		if tlsConfig == nil {
-			tlsConfig = &tls.Config{
-				InsecureSkipVerify: true,
-			}
-		}
-
-		cnf.TLS = tlsConfig
-	}
-
-	var cAddrs []string
-
-	for _, addr := range options.Addrs {
-		if len(addr) == 0 {
-			continue
-		}
-		cAddrs = append(cAddrs, addr)
-	}
-
-	// if we got addrs then we'll update
-	if len(cAddrs) > 0 {
-		cnf.Endpoints = cAddrs
-	}
-	cnf.DialTimeout = options.Timeout
-	cli, err := clientv3.New(cnf)
-	if err != nil {
-		return nil, err
-	}
+	options.Addr = client.Endpoints()[0]
 	e := &etcdConfigProvider{
-		client:   cli,
-		Options:  options,
-		register: make(map[string]uint64),
-		leases:   make(map[string]clientv3.LeaseID),
+		client:  client,
+		Options: options,
 	}
 
 	return e, nil

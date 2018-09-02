@@ -10,7 +10,6 @@ import (
 	"google.golang.org/grpc"
 	"log"
 	"net"
-	"time"
 )
 
 //grpc server
@@ -45,7 +44,7 @@ func NewMockDiscoveryServer(listen string, nodeId string) error {
 	server := grpc.NewServer()
 	prototest.RegisterSayServer(server, &Hello{listen})
 
-	r, err := etcdv3.NewRegistry(registry.Timeout(5 * time.Minute))
+	r, err := etcdv3.NewRegistry(registry.Dsn("127.0.0.1:2379"))
 	if err != nil {
 		panic(err)
 	}

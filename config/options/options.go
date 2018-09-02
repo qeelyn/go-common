@@ -1,9 +1,6 @@
 package options
 
-import (
-	"crypto/tls"
-	"time"
-)
+import "github.com/qeelyn/go-common/grpcx/registry"
 
 type Option func(*Options)
 
@@ -12,11 +9,8 @@ type Options struct {
 	Path string
 	// config fileName
 	FileName string
-	// remote host and port
-	Addrs []string
-	// enable secure
-	Secure bool
-	// tls config for remote
-	TLSConfig *tls.Config
-	Timeout   time.Duration
+	// registry center
+	Registry registry.Registry
+	// address of registry
+	Addr string
 }

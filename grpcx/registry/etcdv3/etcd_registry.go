@@ -3,10 +3,11 @@ package etcdv3
 import (
 	"context"
 	"log"
+	"strconv"
 	"strings"
 	"time"
 
-	"crypto/tls"
+	"errors"
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/etcdserver/api/v3rpc/rpctypes"
 	"github.com/coreos/etcd/mvcc/mvccpb"
@@ -24,61 +25,104 @@ type etcdv3Registry struct {
 	leases   map[string]clientv3.LeaseID
 }
 
-func NewRegistry(opts ...registry.Option) (registry.Registry, error) {
-	config := clientv3.Config{
-		Endpoints: []string{"127.0.0.1:2379"},
-	}
-
+func NewRegistry(opts ...registry.Option) (r registry.Registry, err error) {
 	var options registry.Options
 	for _, o := range opts {
 		o(&options)
 	}
+	var config *clientv3.Config
+	config, err = parseDsn(options.Dsn)
 
-	if options.Timeout == 0 {
-		options.Timeout = 5 * time.Second
+	if err != nil {
+		return
 	}
 
-	if options.Secure || options.TLSConfig != nil {
-		tlsConfig := options.TLSConfig
-		if tlsConfig == nil {
-			tlsConfig = &tls.Config{
-				InsecureSkipVerify: true,
-			}
-		}
-
-		config.TLS = tlsConfig
+	if config.DialTimeout != 0 {
+		options.Timeout = config.DialTimeout
+	} else {
+		options.Timeout = 1 * time.Minute
 	}
 
-	var cAddrs []string
-
-	for _, addr := range options.Addrs {
-		if len(addr) == 0 {
-			continue
-		}
-		cAddrs = append(cAddrs, addr)
+	if options.TLSConfig != nil {
+		config.TLS = options.TLSConfig
 	}
 
-	// if we got addrs then we'll update
-	if len(cAddrs) > 0 {
-		config.Endpoints = cAddrs
-	}
-	config.DialTimeout = options.Timeout
-	cli, err := clientv3.New(config)
+	cli, err := clientv3.New(*config)
 	if err != nil {
 		return nil, err
 	}
-	e := &etcdv3Registry{
+	r = &etcdv3Registry{
 		client:   cli,
 		options:  options,
 		register: make(map[string]uint64),
 		leases:   make(map[string]clientv3.LeaseID),
 	}
 
-	return e, nil
+	return r, nil
 }
 
 func init() {
 	registry.DefaultRegistry = NewRegistry
+}
+
+func parseDsn(dsn string) (*clientv3.Config, error) {
+	cnf := &clientv3.Config{}
+	if c := strings.Index(dsn, "?"); c != -1 {
+		for _, pair := range strings.FieldsFunc(dsn[c+1:], isOptSep) {
+			l := strings.SplitN(pair, "=", 2)
+			if len(l) != 2 || l[0] == "" || l[1] == "" {
+				return nil, errors.New("connection option must be key=value: " + pair)
+			}
+			switch l[0] {
+			case "auto-sync-interval":
+				if val, err := strconv.Atoi(l[1]); err != nil {
+					return nil, err
+				} else {
+					cnf.AutoSyncInterval = time.Duration(val) * time.Second
+				}
+			case "username":
+				cnf.Username = l[1]
+			case "password":
+				cnf.Password = l[1]
+			case "dial-timeout":
+				if val, err := strconv.Atoi(l[1]); err != nil {
+					return nil, err
+				} else {
+					cnf.DialTimeout = time.Duration(val) * time.Second
+				}
+			case "dial-keep-alive-time":
+				if val, err := strconv.Atoi(l[1]); err != nil {
+					return nil, err
+				} else {
+					cnf.DialKeepAliveTime = time.Duration(val) * time.Second
+				}
+			case "dial-keep-alive-timeout":
+				if val, err := strconv.Atoi(l[1]); err != nil {
+					return nil, err
+				} else {
+					cnf.DialKeepAliveTimeout = time.Duration(val) * time.Second
+				}
+			case "reject-old-cluster":
+				cnf.RejectOldCluster = l[1] == "true"
+			}
+		}
+		dsn = dsn[:c]
+	}
+	if c := strings.Index(dsn, "/"); c != -1 {
+		dsn = dsn[:c]
+	}
+	if dsn != "" {
+		addrs := strings.Split(dsn, ",")
+		cnf.Endpoints = make([]string, len(addrs))
+		for k, v := range addrs {
+			cnf.Endpoints[k] = v
+		}
+	}
+	return cnf, nil
+}
+
+func isOptSep(c rune) bool {
+	return c == ';' || c == '&'
 }
 
 func (t *etcdv3Registry) Register(serviceName string, node *registry.Node, opts ...registry.RegisterOption) error {
@@ -213,4 +257,11 @@ func (t *etcdv3Registry) Unregister(serviceName string, node *registry.Node) err
 		return err
 	}
 	return nil
+}
+
+func (t *etcdv3Registry) GetClient() interface{} {
+	if t == nil {
+		return nil
+	}
+	return t.client
 }
