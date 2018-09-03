@@ -5,7 +5,6 @@ import (
 	"crypto/rsa"
 	"errors"
 	"github.com/dgrijalva/jwt-go"
-	"io/ioutil"
 	"strings"
 	"time"
 )
@@ -28,11 +27,11 @@ type BearTokenValidator struct {
 	// Set the identity handler function. that mean the jwt is pass validete
 	IdentityHandler func(c context.Context, claims jwt.MapClaims) (*Identity, error)
 
-	// Private key file for asymmetric algorithms
-	PrivKeyFile string
+	// Private key file byte for asymmetric algorithms
+	PrivKeyFile []byte
 
-	// Public key file for asymmetric algorithms
-	PubKeyFile string
+	// Public key file byte for asymmetric algorithms
+	PubKeyFile []byte
 
 	// Private key
 	privKey *rsa.PrivateKey
@@ -65,13 +64,13 @@ var (
 )
 
 func (b *BearTokenValidator) readKeys() error {
-	if b.PrivKeyFile != "" {
+	if b.PrivKeyFile != nil {
 		err := b.privateKey()
 		if err != nil {
 			return err
 		}
 	}
-	if b.PubKeyFile != "" {
+	if b.PubKeyFile != nil {
 		err := b.publicKey()
 		if err != nil {
 			return err
@@ -81,11 +80,10 @@ func (b *BearTokenValidator) readKeys() error {
 }
 
 func (b *BearTokenValidator) privateKey() error {
-	keyData, err := ioutil.ReadFile(b.PrivKeyFile)
-	if err != nil {
+	if b.PrivKeyFile == nil {
 		return ErrNoPrivKeyFile
 	}
-	key, err := jwt.ParseRSAPrivateKeyFromPEM(keyData)
+	key, err := jwt.ParseRSAPrivateKeyFromPEM(b.PrivKeyFile)
 	if err != nil {
 		return ErrInvalidPrivKey
 	}
@@ -94,11 +92,10 @@ func (b *BearTokenValidator) privateKey() error {
 }
 
 func (b *BearTokenValidator) publicKey() error {
-	keyData, err := ioutil.ReadFile(b.PubKeyFile)
-	if err != nil {
+	if b.pubKey == nil {
 		return ErrNoPubKeyFile
 	}
-	key, err := jwt.ParseRSAPublicKeyFromPEM(keyData)
+	key, err := jwt.ParseRSAPublicKeyFromPEM(b.PubKeyFile)
 	if err != nil {
 		return ErrInvalidPubKey
 	}

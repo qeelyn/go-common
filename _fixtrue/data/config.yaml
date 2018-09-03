@@ -13,3 +13,7 @@ error-template: ""
 
 web:
   staticdir: "public"
+
+auth:
+  private-key: "config-local.yaml"
+  keep: true

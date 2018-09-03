@@ -153,7 +153,7 @@ func (t Server) StartPrometheus(rpcSrv *grpc.Server) {
 	}
 }
 
-func AuthFunc(keyFile string) grpc_auth.AuthFunc {
+func AuthFunc(keyFile []byte) grpc_auth.AuthFunc {
 	validator := auth.BearTokenValidator{
 		PubKeyFile: keyFile,
 		IdentityHandler: func(ctx context.Context, claims jwt.MapClaims) (*auth.Identity, error) {

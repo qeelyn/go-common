@@ -1,10 +1,13 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"github.com/qeelyn/go-common/config/options"
 	"github.com/qeelyn/go-common/grpcx/registry"
 	"github.com/spf13/viper"
+	"io"
+	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -99,6 +102,66 @@ func LoadRemoteConfig(opts *options.Options) (*viper.Viper, error) {
 	}
 	defaultSet(cnf)
 	return cnf, nil
+}
+
+type pathProvider struct {
+	viper.RemoteProvider
+	path string
+}
+
+func (t pathProvider) Path() string {
+	return t.path
+}
+
+// 通过配置的key获取远程路径,读取返回字节数组
+func GetRemotePath(cnf *viper.Viper, key string) (io.Reader, error) {
+	remotePath := cnf.GetString(key)
+	if remotePath == "" {
+		return nil, errors.New("key no found")
+	}
+	remote := viper.RemoteConfig
+	if remote == nil {
+		return nil, errors.New("viper miss RemoteConfig")
+	}
+	if r, err := remote.Get(&pathProvider{path: remotePath}); err != nil {
+		return nil, err
+	} else {
+		return r, nil
+	}
+}
+
+// 从配置中读取配置源(文件流或者远程字节流),并读取源的[]byte设置为指定key的值
+// 当
+func ResetFromSource(cnf *viper.Viper, key string) error {
+	if viper.RemoteConfig != nil {
+		if rd, err := GetRemotePath(cnf, key); err != nil {
+			return err
+		} else {
+			if v, err := ioutil.ReadAll(rd); err != nil {
+				return err
+			} else {
+				setConfigValue(cnf, key, v)
+			}
+		}
+	} else {
+		rPath := path.Join(path.Dir(cnf.ConfigFileUsed()), cnf.GetString(key))
+		if v, err := ioutil.ReadFile(rPath); err != nil {
+			return err
+		} else {
+			setConfigValue(cnf, key, v)
+		}
+	}
+	return nil
+}
+
+func setConfigValue(viper *viper.Viper, key string, value interface{}) {
+	keys := strings.Split(key, ".")
+	if len(keys) == 1 {
+		viper.Set(key, value)
+		return
+	}
+	keyMap := viper.GetStringMap(keys[0])
+	keyMap[keys[1]] = value
 }
 
 func defaultSet(cnf *viper.Viper) {

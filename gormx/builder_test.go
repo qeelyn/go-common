@@ -11,7 +11,7 @@ import (
 var (
 	Db       *gorm.DB
 	mysql    = "mysql"
-	mysqlDsn = "root:@tcp(localhost:3306)/test"
+	mysqlDsn = "root:123456@tcp(localhost:3306)/yak"
 )
 
 func setDefaultDb(t *testing.T) {
