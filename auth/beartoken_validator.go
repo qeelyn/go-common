@@ -92,7 +92,7 @@ func (b *BearTokenValidator) privateKey() error {
 }
 
 func (b *BearTokenValidator) publicKey() error {
-	if b.pubKey == nil {
+	if b.PubKeyFile == nil {
 		return ErrNoPubKeyFile
 	}
 	key, err := jwt.ParseRSAPublicKeyFromPEM(b.PubKeyFile)
