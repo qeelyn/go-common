@@ -92,3 +92,15 @@ func TestWithTracerLog(t *testing.T) {
 		t.Error(err)
 	}
 }
+
+func TestJwtAuthFunc(t *testing.T) {
+	cnf := map[string]interface{}{
+		"public-key":     nil,
+		"encryption-key": "abc",
+		"algorithm":      "HS256",
+	}
+	_, err := grpcx.Micro("test", grpcx.WithAuthFunc(grpcx.JwtAuthFunc(cnf)))
+	if err != nil {
+		t.Fatal(err)
+	}
+}

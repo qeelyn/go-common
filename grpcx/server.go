@@ -22,6 +22,7 @@ import (
 	"net"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 type Server struct {
@@ -153,9 +154,21 @@ func (t Server) StartPrometheus(rpcSrv *grpc.Server) {
 	}
 }
 
-func AuthFunc(keyFile []byte) grpc_auth.AuthFunc {
+// auth base jwt,it parse BearToken to Identity entity
+func JwtAuthFunc(config map[string]interface{}) grpc_auth.AuthFunc {
+	pubKey, _ := config["public-key"].([]byte)
+	ekey, _ := config["encryption-key"].(string)
+	algo, _ := config["algorithm"].(string)
+	if strings.HasPrefix(algo, "RS") && pubKey == nil {
+		panic("miss pubKeyFile or priKeyFile setting when use RS signing algorithm")
+	}
+	if strings.HasPrefix(algo, "HS") && ekey == "" {
+		panic("miss encryption-key setting when use HS signing algorithm")
+	}
 	validator := auth.BearTokenValidator{
-		PubKeyFile: keyFile,
+		PubKeyFile:       pubKey,
+		Key:              []byte(ekey),
+		SigningAlgorithm: algo,
 		IdentityHandler: func(ctx context.Context, claims jwt.MapClaims) (*auth.Identity, error) {
 			orgIdStr := metautils.ExtractIncoming(ctx).Get("orgid")
 			id, _ := strconv.Atoi(claims["sub"].(string))
