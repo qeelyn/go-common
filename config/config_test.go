@@ -139,7 +139,7 @@ func TestGetRemotePath(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	io, err := config.GetRemotePath(cnf, "auth.private-key")
+	io, err := config.GetRemotePath(cnf, "config-local.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}

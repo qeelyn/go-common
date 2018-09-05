@@ -114,8 +114,7 @@ func (t pathProvider) Path() string {
 }
 
 // 通过配置的key获取远程路径,读取返回字节数组
-func GetRemotePath(cnf *viper.Viper, key string) (io.Reader, error) {
-	remotePath := cnf.GetString(key)
+func GetRemotePath(cnf *viper.Viper, remotePath string) (io.Reader, error) {
 	if remotePath == "" {
 		return nil, errors.New("key no found")
 	}
@@ -133,8 +132,12 @@ func GetRemotePath(cnf *viper.Viper, key string) (io.Reader, error) {
 // 从配置中读取配置源(文件流或者远程字节流),并读取源的[]byte设置为指定key的值
 // 当
 func ResetFromSource(cnf *viper.Viper, key string) error {
+	value := cnf.GetString(key)
+	if value == "" {
+		return nil
+	}
 	if viper.RemoteConfig != nil {
-		if rd, err := GetRemotePath(cnf, key); err != nil {
+		if rd, err := GetRemotePath(cnf, value); err != nil {
 			return err
 		} else {
 			if v, err := ioutil.ReadAll(rd); err != nil {
@@ -144,7 +147,7 @@ func ResetFromSource(cnf *viper.Viper, key string) error {
 			}
 		}
 	} else {
-		rPath := path.Join(path.Dir(cnf.ConfigFileUsed()), cnf.GetString(key))
+		rPath := path.Join(path.Dir(cnf.ConfigFileUsed()), value)
 		if v, err := ioutil.ReadFile(rPath); err != nil {
 			return err
 		} else {
