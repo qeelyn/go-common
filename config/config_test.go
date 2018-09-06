@@ -199,6 +199,11 @@ check1:
 	if err != nil {
 		t.Fatal(err)
 	}
+	if viper.RemoteConfig == nil {
+		authConfig := cnf.GetStringMap("auth")
+		authConfig["private-key"] = "./" + authConfig["private-key"].(string)
+
+	}
 	count := len(cnf.GetStringMap("auth"))
 	err = config.ResetFromSource(cnf, "auth.private-key")
 	if err != nil {

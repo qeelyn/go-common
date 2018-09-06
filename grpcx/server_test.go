@@ -13,6 +13,7 @@ import (
 	"github.com/uber/jaeger-lib/metrics"
 	"google.golang.org/grpc"
 	"log"
+	"os"
 	"testing"
 )
 
@@ -102,5 +103,31 @@ func TestJwtAuthFunc(t *testing.T) {
 	_, err := grpcx.Micro("test", grpcx.WithAuthFunc(grpcx.JwtAuthFunc(cnf)))
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestWithRegistry(t *testing.T) {
+	var p1, p2 = ":80", "127.0.0.1:80"
+	option := grpcx.WithRegistry(nil, "", p1)
+
+	server := grpcx.NewServer("test", option)
+	if server.Option.RegistryListen != p1 {
+		t.Error()
+	}
+
+	os.Setenv("HOSTIP", "192.168.0.11")
+	option = grpcx.WithRegistry(nil, "", p1)
+
+	t.Log(os.Getenv("HOSTIP"))
+	server = grpcx.NewServer("test", option)
+	if server.Option.RegistryListen != os.Getenv("HOSTIP")+p1 {
+		t.Error()
+	}
+
+	option = grpcx.WithRegistry(nil, "", p2)
+
+	server = grpcx.NewServer("test", option)
+	if server.Option.RegistryListen != p2 {
+		t.Error()
 	}
 }

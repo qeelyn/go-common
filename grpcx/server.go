@@ -124,7 +124,7 @@ func (t Server) Run(rpcSrv *grpc.Server, listen string) error {
 	}
 
 	if t.Option.register != nil {
-		node := &registry.Node{Id: t.Name, Address: t.Option.registryListen}
+		node := &registry.Node{Id: t.Name, Address: t.Option.RegistryListen}
 		if err = t.Option.register.Register(t.Option.registryServiceName, node); err != nil {
 			return err
 		}

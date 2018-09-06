@@ -136,7 +136,14 @@ func ResetFromSource(cnf *viper.Viper, key string) error {
 	if value == "" {
 		return nil
 	}
-	if viper.RemoteConfig != nil {
+	if strings.HasPrefix(value, ".") || strings.HasPrefix(value, "/") || viper.RemoteConfig == nil {
+		rPath := path.Join(path.Dir(cnf.ConfigFileUsed()), value)
+		if v, err := ioutil.ReadFile(rPath); err != nil {
+			return err
+		} else {
+			setConfigValue(cnf, key, v)
+		}
+	} else if viper.RemoteConfig != nil {
 		if rd, err := GetRemotePath(cnf, value); err != nil {
 			return err
 		} else {
@@ -145,13 +152,6 @@ func ResetFromSource(cnf *viper.Viper, key string) error {
 			} else {
 				setConfigValue(cnf, key, v)
 			}
-		}
-	} else {
-		rPath := path.Join(path.Dir(cnf.ConfigFileUsed()), value)
-		if v, err := ioutil.ReadFile(rPath); err != nil {
-			return err
-		} else {
-			setConfigValue(cnf, key, v)
 		}
 	}
 	return nil

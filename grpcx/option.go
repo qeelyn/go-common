@@ -8,6 +8,8 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"log"
+	"os"
+	"strings"
 )
 
 type serverOptions struct {
@@ -20,7 +22,7 @@ type serverOptions struct {
 	prometheusListen         string
 	register                 registry.Registry
 	registryServiceName      string
-	registryListen           string
+	RegistryListen           string
 	Recovery                 grpc_recovery.RecoveryHandlerFunc
 }
 
@@ -78,6 +80,12 @@ func WithRegistry(register registry.Registry, serviceName string, listen string)
 	return func(options *serverOptions) {
 		options.register = register
 		options.registryServiceName = serviceName
-		options.registryListen = listen
+		host := strings.Split(listen, ":")
+		if host[0] == "" {
+			if hip := os.Getenv("HOSTIP"); hip != "" {
+				host[0] = hip
+			}
+		}
+		options.RegistryListen = strings.Join(host, ":")
 	}
 }
