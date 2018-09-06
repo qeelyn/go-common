@@ -27,6 +27,9 @@ func Build(options *options.Options) error {
 }
 
 func NewEtcdConfigProvider(options *options.Options) (*etcdConfigProvider, error) {
+	if options.Registry == nil {
+		return nil, errors.New("registry is not set")
+	}
 	client, ok := options.Registry.GetClient().(*clientv3.Client)
 	if !ok {
 		return nil, errors.New("registry client is not an etcd v3 client")
