@@ -14,6 +14,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/qeelyn/go-common/auth"
 	"github.com/qeelyn/go-common/grpcx/registry"
+	"github.com/qeelyn/go-common/tracing"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -68,7 +69,6 @@ func Micro(name string, opts ...Option) (*Server, error) {
 		uins = append(uins, grpc_opentracing.UnaryServerInterceptor(grpc_opentracing.WithTracer(sOptions.tracer)))
 		sins = append(sins, grpc_opentracing.StreamServerInterceptor(grpc_opentracing.WithTracer(sOptions.tracer)))
 	}
-
 	if sOptions.logger == nil {
 		sOptions.logger, err = zap.NewDevelopment()
 		if err != nil {
@@ -76,8 +76,14 @@ func Micro(name string, opts ...Option) (*Server, error) {
 		}
 	}
 	uins = append(uins, grpc_zap.UnaryServerInterceptor(sOptions.logger))
+
 	sins = append(sins, grpc_zap.StreamServerInterceptor(sOptions.logger))
 	grpc_zap.ReplaceGrpcLogger(sOptions.logger)
+	// if tracer is nil then set a id use for log request id
+	if sOptions.tracer == nil && sOptions.logger != nil {
+		uins = append(uins, tracing.UnaryServerInterceptor())
+		sins = append(sins, tracing.StreamServerInterceptor())
+	}
 
 	// tag and tracer must at first
 	sOptions.unaryServerInterceptors = append(uins, sOptions.unaryServerInterceptors...)
@@ -94,10 +100,14 @@ func Micro(name string, opts ...Option) (*Server, error) {
 		sOptions.applyOption(WithStreamServerInterceptor(grpc_auth.StreamServerInterceptor(sOptions.authFunc)))
 	}
 
+	if sOptions.recovery == nil {
+		sOptions.recovery = RecoveryWithLogger(sOptions)
+	}
+
 	sOptions.applyOption(WithUnaryServerInterceptor(grpc_recovery.UnaryServerInterceptor(
-		grpc_recovery.WithRecoveryHandler(sOptions.Recovery))))
+		grpc_recovery.WithRecoveryHandler(sOptions.recovery))))
 	sOptions.applyOption(WithStreamServerInterceptor(grpc_recovery.StreamServerInterceptor(
-		grpc_recovery.WithRecoveryHandler(sOptions.Recovery))))
+		grpc_recovery.WithRecoveryHandler(sOptions.recovery))))
 
 	return srv, err
 }

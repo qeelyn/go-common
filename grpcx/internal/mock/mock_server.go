@@ -19,6 +19,9 @@ type Hello struct {
 
 func (t *Hello) Hello(ctx context.Context, req *prototest.Request) (*prototest.Response, error) {
 	res := &prototest.Response{}
+	if req == nil {
+		req = &prototest.Request{}
+	}
 	res.Msg = req.Name + ", from:" + t.listen
 	return res, nil
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
 	"github.com/opentracing/opentracing-go"
+	"github.com/qeelyn/go-common/tracing"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
@@ -47,6 +48,8 @@ func Dial(name string, opts ...Option) (*grpc.ClientConn, error) {
 	if options.Tracer != nil {
 		// keep Tracer is last
 		options.UnaryClientInterceptors = append(options.UnaryClientInterceptors, grpc_opentracing.UnaryClientInterceptor(grpc_opentracing.WithTracer(options.Tracer)))
+	} else {
+		options.UnaryClientInterceptors = append(options.UnaryClientInterceptors, tracing.UnaryClientInterceptor(tracing.DefaultClientTraceIdFunc()))
 	}
 	uopt := grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(options.UnaryClientInterceptors...))
 

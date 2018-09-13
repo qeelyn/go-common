@@ -23,7 +23,7 @@ type serverOptions struct {
 	register                 registry.Registry
 	registryServiceName      string
 	RegistryListen           string
-	Recovery                 grpc_recovery.RecoveryHandlerFunc
+	recovery                 grpc_recovery.RecoveryHandlerFunc
 }
 
 func (t *serverOptions) applyOption(opts ...Option) *serverOptions {

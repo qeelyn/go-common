@@ -2,7 +2,9 @@ package grpcx_test
 
 import (
 	"context"
+	"errors"
 	"github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
+	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
 	"github.com/opentracing/opentracing-go"
 	"github.com/qeelyn/go-common/grpcx"
 	"github.com/qeelyn/go-common/grpcx/dialer"
@@ -11,6 +13,8 @@ import (
 	"github.com/uber/jaeger-client-go"
 	"github.com/uber/jaeger-client-go/config"
 	"github.com/uber/jaeger-lib/metrics"
+	"go.uber.org/zap"
+	context2 "golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"log"
 	"os"
@@ -89,7 +93,7 @@ func TestWithTracerLog(t *testing.T) {
 	//ctx,cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	//defer cancel()
 	_, err = client.HelloPanic(context.Background(), &prototest.Request{})
-	if err != nil {
+	if err == nil {
 		t.Error(err)
 	}
 }
@@ -129,5 +133,54 @@ func TestWithRegistry(t *testing.T) {
 	server = grpcx.NewServer("test", option)
 	if server.Option.RegistryListen != p2 {
 		t.Error()
+	}
+}
+
+func TestWithTracerId(t *testing.T) {
+	logger, err := zap.NewDevelopment()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	a, err := grpcx.Micro("test",
+		grpcx.WithLogger(logger),
+		grpcx.WithUnaryServerInterceptor(func(ctx context2.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+			v := metautils.ExtractIncoming(ctx).Get("trace.traceid")
+			if v == "" {
+				return nil, errors.New("server not receive trace context")
+			}
+			return handler(ctx, req)
+		}),
+	)
+	if err != nil {
+		t.Error(err)
+	}
+
+	arpc := a.BuildGrpcServer()
+	prototest.RegisterSayServer(arpc, &mock.Hello{})
+	go a.Run(arpc, mock.TestSvrListen)
+
+	cc, err := dialer.Dial(mock.TestSvrListen,
+		dialer.WithDialOption(grpc.WithInsecure()),
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	client := prototest.NewSayClient(cc)
+	//ctx,cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	//defer cancel()
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, "trace.traceid", "testtraceid")
+	//ctx = metadata.AppendToOutgoingContext(ctx,"trace.traceid","testtraceid")
+	_, err = client.Hello(ctx, &prototest.Request{})
+	if err != nil {
+		t.Error(err)
+	}
+	// not set value,because interceptor return err
+	ctx = context.Background()
+	_, err = client.Hello(ctx, &prototest.Request{})
+	if err == nil {
+		t.Error(err)
 	}
 }
