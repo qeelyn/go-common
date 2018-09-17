@@ -80,7 +80,7 @@ func Micro(name string, opts ...Option) (*Server, error) {
 	sins = append(sins, grpc_zap.StreamServerInterceptor(sOptions.logger))
 	grpc_zap.ReplaceGrpcLogger(sOptions.logger)
 	// if tracer is nil then set a id use for log request id
-	if sOptions.tracer == nil && sOptions.logger != nil {
+	if sOptions.logger != nil {
 		uins = append(uins, tracing.UnaryServerInterceptor())
 		sins = append(sins, tracing.StreamServerInterceptor())
 	}

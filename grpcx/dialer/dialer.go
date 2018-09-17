@@ -22,6 +22,8 @@ type Option func(*Options)
 
 // WithTracer traces rpc calls,the Tracer interceptor must put the last
 // because the context  get value limit
+// if use jeagertracer,the context header key will be uber-trace-id,it can't log by zap logger.
+// if you want auto log by CtxTag,the key must be TagTraceID value,set the jeager's configuration key headers.TraceContextHeaderName to `trace.traceid`
 func WithTracer(t opentracing.Tracer) Option {
 	return func(options *Options) {
 		options.Tracer = t
@@ -48,9 +50,9 @@ func Dial(name string, opts ...Option) (*grpc.ClientConn, error) {
 	if options.Tracer != nil {
 		// keep Tracer is last
 		options.UnaryClientInterceptors = append(options.UnaryClientInterceptors, grpc_opentracing.UnaryClientInterceptor(grpc_opentracing.WithTracer(options.Tracer)))
-	} else {
-		options.UnaryClientInterceptors = append(options.UnaryClientInterceptors, tracing.UnaryClientInterceptor(tracing.DefaultClientTraceIdFunc()))
 	}
+	options.UnaryClientInterceptors = append(options.UnaryClientInterceptors, tracing.UnaryClientInterceptor(tracing.DefaultClientTraceIdFunc()))
+
 	uopt := grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(options.UnaryClientInterceptors...))
 
 	conn, err := grpc.Dial(name, append(options.DialOptions, uopt)...)

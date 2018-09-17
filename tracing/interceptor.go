@@ -4,22 +4,28 @@ import (
 	"context"
 	"github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
-	"github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
 
+const (
+	// opentracing log key is trace.traceid
+	ContextHeaderName = "qeelyn-traceid"
+	LoggerKey         = "traceid"
+)
+
 type ClientTraceIdFunc func(context.Context) (context.Context, error)
 
 func DefaultClientTraceIdFunc() ClientTraceIdFunc {
 	return func(ctx context.Context) (context.Context, error) {
-		tid := ctx.Value(grpc_opentracing.TagTraceId)
+		tid := ctx.Value(ContextHeaderName)
 		if tid == nil {
 			return ctx, nil
 		}
-		newCtx := metadata.AppendToOutgoingContext(ctx, grpc_opentracing.TagTraceId, tid.(string))
+
+		newCtx := metadata.AppendToOutgoingContext(ctx, ContextHeaderName, tid.(string))
 		return newCtx, nil
 	}
 }
@@ -40,9 +46,9 @@ func UnaryClientInterceptor(cidFunc ClientTraceIdFunc) grpc.UnaryClientIntercept
 // 客户端通过metadata向服务端传递
 func UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-		v := metautils.ExtractIncoming(ctx).Get(grpc_opentracing.TagTraceId)
+		v := metautils.ExtractIncoming(ctx).Get(ContextHeaderName)
 		if v != "" {
-			ctxzap.AddFields(ctx, zap.String(grpc_opentracing.TagTraceId, v))
+			ctxzap.AddFields(ctx, zap.String(LoggerKey, v))
 		}
 		return handler(ctx, req)
 	}
@@ -53,10 +59,10 @@ func StreamServerInterceptor() grpc.StreamServerInterceptor {
 		var (
 			newCtx context.Context
 		)
-		v := metautils.ExtractIncoming(stream.Context()).Get(grpc_opentracing.TagTraceId)
+		v := metautils.ExtractIncoming(stream.Context()).Get(ContextHeaderName)
 		newCtx = stream.Context()
 		if v != "" {
-			ctxzap.AddFields(newCtx, zap.String(grpc_opentracing.TagTraceId, v))
+			ctxzap.AddFields(newCtx, zap.String(LoggerKey, v))
 		}
 		wrapped := grpc_middleware.WrapServerStream(stream)
 		wrapped.WrappedContext = newCtx

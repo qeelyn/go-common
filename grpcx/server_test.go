@@ -10,6 +10,7 @@ import (
 	"github.com/qeelyn/go-common/grpcx/dialer"
 	"github.com/qeelyn/go-common/grpcx/internal/mock"
 	"github.com/qeelyn/go-common/grpcx/internal/mock/prototest"
+	"github.com/qeelyn/go-common/tracing"
 	"github.com/uber/jaeger-client-go"
 	"github.com/uber/jaeger-client-go/config"
 	"github.com/uber/jaeger-lib/metrics"
@@ -145,7 +146,7 @@ func TestWithTracerId(t *testing.T) {
 	a, err := grpcx.Micro("test",
 		grpcx.WithLogger(logger),
 		grpcx.WithUnaryServerInterceptor(func(ctx context2.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
-			v := metautils.ExtractIncoming(ctx).Get("trace.traceid")
+			v := metautils.ExtractIncoming(ctx).Get(tracing.ContextHeaderName)
 			if v == "" {
 				return nil, errors.New("server not receive trace context")
 			}
@@ -171,7 +172,7 @@ func TestWithTracerId(t *testing.T) {
 	//ctx,cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	//defer cancel()
 	ctx := context.Background()
-	ctx = context.WithValue(ctx, "trace.traceid", "testtraceid")
+	ctx = context.WithValue(ctx, tracing.ContextHeaderName, "testtraceid")
 	//ctx = metadata.AppendToOutgoingContext(ctx,"trace.traceid","testtraceid")
 	_, err = client.Hello(ctx, &prototest.Request{})
 	if err != nil {
@@ -181,6 +182,6 @@ func TestWithTracerId(t *testing.T) {
 	ctx = context.Background()
 	_, err = client.Hello(ctx, &prototest.Request{})
 	if err == nil {
-		t.Error(err)
+		t.Error("service error not found")
 	}
 }
