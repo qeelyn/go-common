@@ -18,15 +18,6 @@ type Logger struct {
 	ToZapField func(values []interface{}) []zapcore.Field
 }
 
-func (l *Logger) GetZap() *zap.Logger {
-	return l.zap
-}
-
-func (l *Logger) SetZap(zap *zap.Logger) {
-	l.zap = zap
-	l.sugar = zap.Sugar()
-}
-
 func NewFileLogger(config map[string]interface{}) zapcore.Core {
 	// lumberjack.Logger is already safe for concurrent use, so we don't need to
 	// lock it.
@@ -67,6 +58,21 @@ func NewStdLogger() zapcore.Core {
 	return zapcore.NewCore(consoleEncoder, consoleDebugging, zap.DebugLevel)
 }
 
+func (l *Logger) SetZap(zap *zap.Logger) {
+	l.zap = zap
+	l.sugar = zap.Sugar()
+}
+
+// 类型化日志
+func (l *Logger) Strict() *zap.Logger {
+	return l.zap
+}
+
+// 语法糖方式,记录简单信息
+func (l *Logger) Sugared() *zap.SugaredLogger {
+	return l.sugar
+}
+
 func NewLogger(cores ...zapcore.Core) *Logger {
 	core := zapcore.NewTee(cores...)
 	zapLogger := zap.New(core)
@@ -94,38 +100,6 @@ func levelConv(level int8) zapcore.Level {
 	}
 }
 
-func (l *Logger) Debugf(format string, args ...interface{}) {
-	l.sugar.Debugf(format, args)
-}
-
-func (l *Logger) Infof(format string, args ...interface{}) {
-	l.sugar.Infof(format, args)
-}
-
-func (l *Logger) Warnf(format string, args ...interface{}) {
-	l.sugar.Warnf(format, args)
-}
-
-func (l *Logger) Errorf(format string, args ...interface{}) {
-	l.sugar.Errorf(format, args)
-}
-
-func (l *Logger) Debug(args ...interface{}) {
-	l.sugar.Debug(args)
-}
-
-func (l *Logger) Info(args ...interface{}) {
-	l.sugar.Info(args)
-}
-
-func (l *Logger) Warn(args ...interface{}) {
-	l.sugar.Warn(args)
-}
-
-func (l *Logger) Error(args ...interface{}) {
-	l.sugar.Error(args)
-}
-
 // Print passes arguments to Println
 func (l *Logger) Print(values ...interface{}) {
 	l.Println(values)
@@ -134,6 +108,6 @@ func (l *Logger) Print(values ...interface{}) {
 // for gorm & zap
 func (l *Logger) Println(values []interface{}) {
 	if l.ToZapField != nil {
-		l.GetZap().Info("gorm", l.ToZapField(values)...)
+		l.Strict().Info("gorm", l.ToZapField(values)...)
 	}
 }

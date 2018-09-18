@@ -8,6 +8,6 @@ import (
 
 func TestNewLogger(t *testing.T) {
 	l := logger.NewLogger(logger.NewStdLogger())
-	l.SetZap(l.GetZap().With(zap.String("key", "keyValue")))
-	l.Error("test")
+	l.SetZap(l.Strict().With(zap.String("key", "keyValue")))
+	l.Sugared().Error("test")
 }
