@@ -78,7 +78,12 @@ func (l *Logger) Sugared() *zap.SugaredLogger {
 }
 
 func (l *Logger) WithContext(ctx context.Context) *zap.Logger {
-	return l.zap.With(zap.String(LoggerKey, ctx.Value(ContextHeaderName).(string)))
+	return l.zap.With(TraceIdField(ctx))
+}
+
+// get trace id of zap field type
+func TraceIdField(ctx context.Context) zap.Field {
+	return zap.String(LoggerKey, ctx.Value(ContextHeaderName).(string))
 }
 
 func NewLogger(cores ...zapcore.Core) *Logger {
