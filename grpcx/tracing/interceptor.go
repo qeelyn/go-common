@@ -25,13 +25,13 @@ var (
 type ClientTraceIdFunc func(context.Context) (context.Context, error)
 
 // support get string key from context.such as gin
-func DefaultClientTraceIdFunc(fromHeader bool) ClientTraceIdFunc {
+func DefaultClientTraceIdFunc(fromHttpHeader bool) ClientTraceIdFunc {
 	return func(ctx context.Context) (context.Context, error) {
 		var tid interface{}
-		if fromHeader {
-			tid = ctx.Value(tracingTagKey)
-		} else {
+		if fromHttpHeader {
 			tid = ctx.Value(ContextHeaderName)
+		} else {
+			tid = ctx.Value(tracingTagKey)
 		}
 		if tid == nil {
 			return ctx, nil
