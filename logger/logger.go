@@ -1,15 +1,19 @@
 package logger
 
 import (
+	"context"
 	"fmt"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"gopkg.in/natefinch/lumberjack.v2"
 	"os"
 	"path/filepath"
 )
 
-import (
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	"gopkg.in/natefinch/lumberjack.v2"
+const (
+	// opentracing log key is trace.traceid
+	ContextHeaderName = "qeelyn-traceid"
+	LoggerKey         = "traceid"
 )
 
 type Logger struct {
@@ -71,6 +75,10 @@ func (l *Logger) Strict() *zap.Logger {
 // 语法糖方式,记录简单信息
 func (l *Logger) Sugared() *zap.SugaredLogger {
 	return l.sugar
+}
+
+func (l *Logger) WithContext(ctx context.Context) *zap.Logger {
+	return l.zap.With(zap.String(LoggerKey, ctx.Value(ContextHeaderName).(string)))
 }
 
 func NewLogger(cores ...zapcore.Core) *Logger {

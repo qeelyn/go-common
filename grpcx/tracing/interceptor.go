@@ -5,15 +5,10 @@ import (
 	"github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
+	"github.com/qeelyn/go-common/logger"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
-)
-
-const (
-	// opentracing log key is trace.traceid
-	ContextHeaderName = "qeelyn-traceid"
-	LoggerKey         = "traceid"
 )
 
 type tracingTag struct{}
@@ -29,7 +24,7 @@ func DefaultClientTraceIdFunc(fromHttpHeader bool) ClientTraceIdFunc {
 	return func(ctx context.Context) (context.Context, error) {
 		var tid interface{}
 		if fromHttpHeader {
-			tid = ctx.Value(ContextHeaderName)
+			tid = ctx.Value(logger.ContextHeaderName)
 		} else {
 			tid = ctx.Value(tracingTagKey)
 		}
@@ -37,7 +32,7 @@ func DefaultClientTraceIdFunc(fromHttpHeader bool) ClientTraceIdFunc {
 			return ctx, nil
 		}
 
-		newCtx := metadata.AppendToOutgoingContext(ctx, ContextHeaderName, tid.(string))
+		newCtx := metadata.AppendToOutgoingContext(ctx, logger.ContextHeaderName, tid.(string))
 		return newCtx, nil
 	}
 }
@@ -63,9 +58,9 @@ func UnaryClientInterceptor(cidFunc ClientTraceIdFunc) grpc.UnaryClientIntercept
 // 客户端通过metadata向服务端传递
 func UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-		v := metautils.ExtractIncoming(ctx).Get(ContextHeaderName)
+		v := metautils.ExtractIncoming(ctx).Get(logger.ContextHeaderName)
 		if v != "" {
-			ctxzap.AddFields(ctx, zap.String(LoggerKey, v))
+			ctxzap.AddFields(ctx, zap.String(logger.LoggerKey, v))
 		}
 		newCtx := ToContext(ctx, v)
 		return handler(newCtx, req)
@@ -75,9 +70,9 @@ func UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 func StreamServerInterceptor() grpc.StreamServerInterceptor {
 	return func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		ctx := stream.Context()
-		v := metautils.ExtractIncoming(stream.Context()).Get(ContextHeaderName)
+		v := metautils.ExtractIncoming(stream.Context()).Get(logger.ContextHeaderName)
 		if v != "" {
-			ctxzap.AddFields(ctx, zap.String(LoggerKey, v))
+			ctxzap.AddFields(ctx, zap.String(logger.LoggerKey, v))
 		}
 		newCtx := ToContext(ctx, v)
 		wrapped := grpc_middleware.WrapServerStream(stream)
