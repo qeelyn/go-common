@@ -16,11 +16,23 @@ const (
 	LoggerKey         = "traceid"
 )
 
+type tracingTag struct{}
+
+var (
+	tracingTagKey = &tracingTag{}
+)
+
 type ClientTraceIdFunc func(context.Context) (context.Context, error)
 
-func DefaultClientTraceIdFunc() ClientTraceIdFunc {
+// support get string key from context.such as gin
+func DefaultClientTraceIdFunc(fromHeader bool) ClientTraceIdFunc {
 	return func(ctx context.Context) (context.Context, error) {
-		tid := ctx.Value(ContextHeaderName)
+		var tid interface{}
+		if fromHeader {
+			tid = ctx.Value(tracingTagKey)
+		} else {
+			tid = ctx.Value(ContextHeaderName)
+		}
 		if tid == nil {
 			return ctx, nil
 		}
@@ -28,6 +40,11 @@ func DefaultClientTraceIdFunc() ClientTraceIdFunc {
 		newCtx := metadata.AppendToOutgoingContext(ctx, ContextHeaderName, tid.(string))
 		return newCtx, nil
 	}
+}
+
+// append to context
+func ToContext(ctx context.Context, traceId string) context.Context {
+	return context.WithValue(ctx, tracingTagKey, traceId)
 }
 
 // UnaryClientInterceptor returns a new unary client interceptor that optionally logs the execution of external gRPC calls.
@@ -50,20 +67,19 @@ func UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 		if v != "" {
 			ctxzap.AddFields(ctx, zap.String(LoggerKey, v))
 		}
-		return handler(ctx, req)
+		newCtx := ToContext(ctx, v)
+		return handler(newCtx, req)
 	}
 }
 
 func StreamServerInterceptor() grpc.StreamServerInterceptor {
 	return func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-		var (
-			newCtx context.Context
-		)
+		ctx := stream.Context()
 		v := metautils.ExtractIncoming(stream.Context()).Get(ContextHeaderName)
-		newCtx = stream.Context()
 		if v != "" {
-			ctxzap.AddFields(newCtx, zap.String(LoggerKey, v))
+			ctxzap.AddFields(ctx, zap.String(LoggerKey, v))
 		}
+		newCtx := ToContext(ctx, v)
 		wrapped := grpc_middleware.WrapServerStream(stream)
 		wrapped.WrappedContext = newCtx
 		return handler(srv, wrapped)

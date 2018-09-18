@@ -14,7 +14,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/qeelyn/go-common/auth"
 	"github.com/qeelyn/go-common/grpcx/registry"
-	"github.com/qeelyn/go-common/tracing"
+	"github.com/qeelyn/go-common/grpcx/tracing"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"

@@ -10,12 +10,11 @@ import (
 	"github.com/qeelyn/go-common/grpcx/dialer"
 	"github.com/qeelyn/go-common/grpcx/internal/mock"
 	"github.com/qeelyn/go-common/grpcx/internal/mock/prototest"
-	"github.com/qeelyn/go-common/tracing"
+	"github.com/qeelyn/go-common/grpcx/tracing"
 	"github.com/uber/jaeger-client-go"
 	"github.com/uber/jaeger-client-go/config"
 	"github.com/uber/jaeger-lib/metrics"
 	"go.uber.org/zap"
-	context2 "golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"log"
 	"os"
@@ -145,7 +144,7 @@ func TestWithTracerId(t *testing.T) {
 
 	a, err := grpcx.Micro("test",
 		grpcx.WithLogger(logger),
-		grpcx.WithUnaryServerInterceptor(func(ctx context2.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+		grpcx.WithUnaryServerInterceptor(func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 			v := metautils.ExtractIncoming(ctx).Get(tracing.ContextHeaderName)
 			if v == "" {
 				return nil, errors.New("server not receive trace context")
@@ -163,6 +162,7 @@ func TestWithTracerId(t *testing.T) {
 
 	cc, err := dialer.Dial(mock.TestSvrListen,
 		dialer.WithDialOption(grpc.WithInsecure()),
+		dialer.WithTraceIdFunc(tracing.DefaultClientTraceIdFunc(true)),
 	)
 	if err != nil {
 		panic(err)
@@ -172,7 +172,7 @@ func TestWithTracerId(t *testing.T) {
 	//ctx,cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	//defer cancel()
 	ctx := context.Background()
-	ctx = context.WithValue(ctx, tracing.ContextHeaderName, "testtraceid")
+	ctx = tracing.ToContext(ctx, "testtraceid")
 	//ctx = metadata.AppendToOutgoingContext(ctx,"trace.traceid","testtraceid")
 	_, err = client.Hello(ctx, &prototest.Request{})
 	if err != nil {
