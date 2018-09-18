@@ -13,7 +13,7 @@ import (
 const (
 	// opentracing log key is trace.traceid
 	ContextHeaderName = "qeelyn-traceid"
-	LoggerKey         = "traceid"
+	TraceIdKey        = "traceid"
 )
 
 type Logger struct {
@@ -83,7 +83,7 @@ func (l *Logger) WithContext(ctx context.Context) *zap.Logger {
 
 // get trace id of zap field type
 func TraceIdField(ctx context.Context) zap.Field {
-	return zap.String(LoggerKey, ctx.Value(ContextHeaderName).(string))
+	return zap.String(TraceIdKey, ctx.Value(ContextHeaderName).(string))
 }
 
 func NewLogger(cores ...zapcore.Core) *Logger {

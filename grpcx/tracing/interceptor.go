@@ -60,7 +60,7 @@ func UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		v := metautils.ExtractIncoming(ctx).Get(logger.ContextHeaderName)
 		if v != "" {
-			ctxzap.AddFields(ctx, zap.String(logger.LoggerKey, v))
+			ctxzap.AddFields(ctx, zap.String(logger.TraceIdKey, v))
 		}
 		newCtx := ToContext(ctx, v)
 		return handler(newCtx, req)
@@ -72,7 +72,7 @@ func StreamServerInterceptor() grpc.StreamServerInterceptor {
 		ctx := stream.Context()
 		v := metautils.ExtractIncoming(stream.Context()).Get(logger.ContextHeaderName)
 		if v != "" {
-			ctxzap.AddFields(ctx, zap.String(logger.LoggerKey, v))
+			ctxzap.AddFields(ctx, zap.String(logger.TraceIdKey, v))
 		}
 		newCtx := ToContext(ctx, v)
 		wrapped := grpc_middleware.WrapServerStream(stream)
