@@ -44,7 +44,7 @@ func NewFileLogger(config map[string]interface{}) zapcore.Core {
 
 	level := zap.InfoLevel
 	if cLevel, ok := config["level"].(int); ok {
-		if cLevel > -1 && cLevel < 5 {
+		if cLevel >= -1 && cLevel <= 5 {
 			level = levelConv(int8(cLevel))
 		}
 	}
