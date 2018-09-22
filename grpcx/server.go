@@ -113,7 +113,7 @@ func Micro(name string, opts ...Option) (*Server, error) {
 }
 
 func (t Server) BuildGrpcServer() *grpc.Server {
-	var opts []grpc.ServerOption
+	var opts = t.Option.grpcOptions
 	if len(t.Option.unaryServerInterceptors) > 0 {
 		opts = append(opts, grpc.UnaryInterceptor(
 			grpc_middleware.ChainUnaryServer(t.Option.unaryServerInterceptors...),

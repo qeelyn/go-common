@@ -24,6 +24,7 @@ type serverOptions struct {
 	registryServiceName      string
 	RegistryListen           string
 	recovery                 grpc_recovery.RecoveryHandlerFunc
+	grpcOptions              []grpc.ServerOption
 }
 
 func (t *serverOptions) applyOption(opts ...Option) *serverOptions {
@@ -87,5 +88,11 @@ func WithRegistry(register registry.Registry, serviceName string, listen string)
 			}
 		}
 		options.RegistryListen = strings.Join(host, ":")
+	}
+}
+
+func WithGrpcOption(option grpc.ServerOption) Option {
+	return func(options *serverOptions) {
+		options.grpcOptions = append(options.grpcOptions, option)
 	}
 }

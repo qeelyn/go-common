@@ -11,18 +11,23 @@ import (
 	"github.com/qeelyn/go-common/grpcx/internal/mock"
 	"github.com/qeelyn/go-common/grpcx/internal/mock/prototest"
 	"github.com/qeelyn/go-common/grpcx/tracing"
+	logger2 "github.com/qeelyn/go-common/logger"
 	"github.com/uber/jaeger-client-go"
 	"github.com/uber/jaeger-client-go/config"
 	"github.com/uber/jaeger-lib/metrics"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/keepalive"
 	"log"
 	"os"
 	"testing"
+	"time"
 )
 
 func TestMicro(t *testing.T) {
-	_, err := grpcx.Micro("test", grpcx.WithPrometheus(":9100"))
+	_, err := grpcx.Micro("test", grpcx.WithPrometheus(":9100"),
+		grpcx.WithGrpcOption(grpc.KeepaliveParams(keepalive.ServerParameters{Time: 10 * time.Minute})),
+	)
 	if err != nil {
 		t.Error(err)
 	}
@@ -145,7 +150,7 @@ func TestWithTracerId(t *testing.T) {
 	a, err := grpcx.Micro("test",
 		grpcx.WithLogger(logger),
 		grpcx.WithUnaryServerInterceptor(func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
-			v := metautils.ExtractIncoming(ctx).Get(tracing.ContextHeaderName)
+			v := metautils.ExtractIncoming(ctx).Get(logger2.ContextHeaderName)
 			if v == "" {
 				return nil, errors.New("server not receive trace context")
 			}
