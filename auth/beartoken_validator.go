@@ -178,7 +178,7 @@ func (b *BearTokenValidator) TokenGenerator(userID string) (string, time.Time, e
 
 func (b *BearTokenValidator) parseToken(token string) (*jwt.Token, error) {
 	return jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
-		if strings.HasPrefix("HS", token.Method.Alg()) {
+		if strings.HasPrefix(token.Method.Alg(), "HS") {
 			return b.Key, nil
 		} else {
 			return b.pubKey, nil
