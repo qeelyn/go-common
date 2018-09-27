@@ -196,7 +196,7 @@ func JwtAuthFunc(config map[string]interface{}) grpc_auth.AuthFunc {
 		if err != nil {
 			return ctx, err
 		}
-
+		ctx = context.WithValue(ctx, "authorization", "bearer "+token)
 		if id, err := validator.Validate(ctx, token); err != nil {
 			return nil, status.Error(codes.Unauthenticated, err.Error())
 		} else {
