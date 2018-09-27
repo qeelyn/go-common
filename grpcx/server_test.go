@@ -7,6 +7,7 @@ import (
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
 	"github.com/opentracing/opentracing-go"
 	"github.com/qeelyn/go-common/grpcx"
+	"github.com/qeelyn/go-common/grpcx/authfg"
 	"github.com/qeelyn/go-common/grpcx/dialer"
 	"github.com/qeelyn/go-common/grpcx/internal/mock"
 	"github.com/qeelyn/go-common/grpcx/internal/mock/prototest"
@@ -109,7 +110,7 @@ func TestJwtAuthFunc(t *testing.T) {
 		"encryption-key": "abc",
 		"algorithm":      "HS256",
 	}
-	_, err := grpcx.Micro("test", grpcx.WithAuthFunc(grpcx.JwtAuthFunc(cnf)))
+	_, err := grpcx.Micro("test", grpcx.WithAuthFunc(authfg.ServerJwtAuthFunc(cnf)))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -1,29 +1,21 @@
 package grpcx
 
 import (
-	"context"
-	"github.com/dgrijalva/jwt-go"
 	"github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	"github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	"github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
-	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
 	"github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/qeelyn/go-common/auth"
 	"github.com/qeelyn/go-common/grpcx/registry"
 	"github.com/qeelyn/go-common/grpcx/tracing"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"log"
 	"net"
 	"net/http"
-	"strconv"
-	"strings"
 )
 
 type Server struct {
@@ -161,46 +153,5 @@ func (t Server) StartPrometheus(rpcSrv *grpc.Server) {
 				log.Fatal("Unable to start a http server.")
 			}
 		}()
-	}
-}
-
-// auth base jwt,it parse BearToken to Identity entity
-func JwtAuthFunc(config map[string]interface{}) grpc_auth.AuthFunc {
-	pubKey, _ := config["public-key"].([]byte)
-	ekey, _ := config["encryption-key"].(string)
-	algo, _ := config["algorithm"].(string)
-	if strings.HasPrefix(algo, "RS") && pubKey == nil {
-		panic("miss pubKeyFile or priKeyFile setting when use RS signing algorithm")
-	}
-	if strings.HasPrefix(algo, "HS") && ekey == "" {
-		panic("miss encryption-key setting when use HS signing algorithm")
-	}
-	validator := auth.BearTokenValidator{
-		PubKeyFile:       pubKey,
-		Key:              []byte(ekey),
-		SigningAlgorithm: algo,
-		IdentityHandler: func(ctx context.Context, claims jwt.MapClaims) (*auth.Identity, error) {
-			orgIdStr := metautils.ExtractIncoming(ctx).Get("orgid")
-			id, _ := strconv.Atoi(claims["sub"].(string))
-			orgId, _ := strconv.Atoi(orgIdStr)
-			identity := &auth.Identity{
-				Id:    int32(id),
-				OrgId: int32(orgId),
-			}
-			return identity, nil
-		},
-	}
-	validator.Init()
-	return func(ctx context.Context) (context.Context, error) {
-		token, err := grpc_auth.AuthFromMD(ctx, "bearer")
-		if err != nil {
-			return ctx, err
-		}
-		ctx = context.WithValue(ctx, "authorization", "bearer "+token)
-		if id, err := validator.Validate(ctx, token); err != nil {
-			return nil, status.Error(codes.Unauthenticated, err.Error())
-		} else {
-			return context.WithValue(ctx, auth.ActiveUserContextKey, id), nil
-		}
 	}
 }

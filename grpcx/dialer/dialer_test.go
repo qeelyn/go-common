@@ -2,6 +2,7 @@ package dialer_test
 
 import (
 	"github.com/opentracing/opentracing-go"
+	"github.com/qeelyn/go-common/grpcx/authfg"
 	"github.com/qeelyn/go-common/grpcx/dialer"
 	"google.golang.org/grpc"
 	"strings"
@@ -41,7 +42,7 @@ func TestWithDialOption(t *testing.T) {
 }
 
 func TestWithUnaryClientInterceptor(t *testing.T) {
-	o := dialer.WithUnaryClientInterceptor(dialer.WithAuth())
+	o := dialer.WithUnaryClientInterceptor(authfg.WithAuthClient(false))
 	os := &dialer.Options{}
 	o(os)
 	if os.UnaryClientInterceptors[0] == nil {
@@ -53,10 +54,10 @@ func TestDial(t *testing.T) {
 	_, err := dialer.Dial("test",
 		dialer.WithDialOption(grpc.WithTimeout(1*time.Second)),
 		dialer.WithTracer(&tracer{}),
-		dialer.WithUnaryClientInterceptor(dialer.WithAuth()),
+		dialer.WithUnaryClientInterceptor(authfg.WithAuthClient(false)),
 	)
 	if strings.Index(err.Error(), "failed to dial") == 0 {
 		return
 	}
-	t.Errorf("dial get err:", err)
+	t.Errorf("dial get err:%s", err)
 }

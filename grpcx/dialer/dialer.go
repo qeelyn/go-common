@@ -1,14 +1,12 @@
 package dialer
 
 import (
-	"context"
 	"fmt"
 	"github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
 	"github.com/opentracing/opentracing-go"
 	"github.com/qeelyn/go-common/grpcx/tracing"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
 )
 
 //
@@ -35,10 +33,6 @@ func WithDialOption(gopts ...grpc.DialOption) Option {
 	return func(options *Options) {
 		options.DialOptions = gopts
 	}
-}
-
-func WithAuth() grpc.UnaryClientInterceptor {
-	return AuthUnaryInterceptor
 }
 
 func WithTraceIdFunc(idFunc tracing.ClientTraceIdFunc) Option {
@@ -78,21 +72,4 @@ func WithUnaryClientInterceptor(interceptors ...grpc.UnaryClientInterceptor) Opt
 	return func(options *Options) {
 		options.UnaryClientInterceptors = append(options.UnaryClientInterceptors, interceptors...)
 	}
-}
-
-func AuthUnaryInterceptor(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
-	authHeader := ctx.Value("authorization")
-	var md metadata.MD
-	if authHeader != nil {
-		md = metadata.Pairs("authorization", authHeader.(string))
-	}
-	orgHeader := ctx.Value("orgid")
-	if orgHeader != nil {
-		umd := metadata.Pairs("orgId", orgHeader.(string))
-		md = metadata.Join(md, umd)
-	}
-
-	newCtx := metadata.NewOutgoingContext(ctx, md)
-
-	return invoker(newCtx, method, req, reply, cc, opts...)
 }
