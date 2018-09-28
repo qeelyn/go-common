@@ -27,7 +27,7 @@ func TestWithAuthClient(t *testing.T) {
 			if identity := ctx.Value(auth.ActiveUserContextKey); identity == nil {
 				return errors.New("identity no found")
 			} else {
-				if i := identity.(auth.Identity); i.Id != 22 && i.OrgId != 0 {
+				if i := identity.(auth.Identity); i.IdInt() != 22 && i.OrgIdInt() != 0 {
 					return errors.New("identity value error")
 				}
 			}
@@ -45,8 +45,8 @@ func TestWithAuthClient(t *testing.T) {
 
 	// grpc mock
 	ctx = context.WithValue(ctx, auth.ActiveUserContextKey, auth.Identity{
-		Id:    22,
-		OrgId: 0,
+		Id:    "22",
+		OrgId: "0",
 	})
 	ctx = metadata.NewIncomingContext(ctx, metadata.Pairs("authorization", header))
 	hasAuth = true
@@ -75,7 +75,7 @@ func TestServerJwtAuthFunc(t *testing.T) {
 	}
 	if id := newCtx.Value(auth.ActiveUserContextKey); id == nil {
 		t.Fatal("id no found")
-	} else if idd, ok := id.(*auth.Identity); !ok || idd.OrgId != 100 {
+	} else if idd, ok := id.(*auth.Identity); !ok || idd.OrgIdInt() != 100 {
 		t.Fatal("org no found")
 	}
 

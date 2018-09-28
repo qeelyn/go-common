@@ -10,7 +10,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"strconv"
 	"strings"
 )
 
@@ -45,7 +44,7 @@ func WithAuthClient(fromHttpHeader bool) grpc.UnaryClientInterceptor {
 		identity := ctx.Value(auth.ActiveUserContextKey)
 		if identity != nil {
 			if id, ok := identity.(auth.Identity); ok {
-				kv = append(kv, organizationIdKey, strconv.Itoa(int(id.OrgId)))
+				kv = append(kv, organizationIdKey, id.OrgId)
 			}
 		}
 		if len(kv) > 0 {
@@ -67,17 +66,16 @@ func ServerJwtAuthFunc(config map[string]interface{}) grpc_auth.AuthFunc {
 	if strings.HasPrefix(algo, "HS") && ekey == "" {
 		panic("miss encryption-key setting when use HS signing algorithm")
 	}
-	validator := auth.BearTokenValidator{
+	validator := auth.BearerTokenValidator{
 		PubKeyFile:       pubKey,
 		Key:              []byte(ekey),
 		SigningAlgorithm: algo,
 		IdentityHandler: func(ctx context.Context, claims jwt.MapClaims) (*auth.Identity, error) {
-			orgIdStr := metautils.ExtractIncoming(ctx).Get(organizationIdKey)
-			id, _ := strconv.Atoi(claims["sub"].(string))
-			orgId, _ := strconv.Atoi(orgIdStr)
+			orgId := metautils.ExtractIncoming(ctx).Get(organizationIdKey)
+			id, _ := claims["sub"].(string)
 			identity := &auth.Identity{
-				Id:    int32(id),
-				OrgId: int32(orgId),
+				Id:    id,
+				OrgId: orgId,
 			}
 			return identity, nil
 		},

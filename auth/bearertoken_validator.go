@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-type BearTokenValidator struct {
+type BearerTokenValidator struct {
 	// signing algorithm - possible values are HS256, HS384, HS512
 	// Optional, default is HS256.
 	SigningAlgorithm string
@@ -61,9 +61,12 @@ var (
 
 	// ErrInvalidPubKey indicates the the given public key is invalid
 	ErrInvalidPubKey = errors.New("public key invalid")
+
+	// ErrInvalidKey indicates the the given key is invalid
+	ErrInvalidKey = errors.New("encrypty key invalid")
 )
 
-func (b *BearTokenValidator) readKeys() error {
+func (b *BearerTokenValidator) readKeys() error {
 	if b.PrivKeyFile != nil {
 		err := b.privateKey()
 		if err != nil {
@@ -79,7 +82,7 @@ func (b *BearTokenValidator) readKeys() error {
 	return nil
 }
 
-func (b *BearTokenValidator) privateKey() error {
+func (b *BearerTokenValidator) privateKey() error {
 	if b.PrivKeyFile == nil {
 		return ErrNoPrivKeyFile
 	}
@@ -91,7 +94,7 @@ func (b *BearTokenValidator) privateKey() error {
 	return nil
 }
 
-func (b *BearTokenValidator) publicKey() error {
+func (b *BearerTokenValidator) publicKey() error {
 	if b.PubKeyFile == nil {
 		return ErrNoPubKeyFile
 	}
@@ -103,7 +106,7 @@ func (b *BearTokenValidator) publicKey() error {
 	return nil
 }
 
-func (b *BearTokenValidator) usingPublicKeyAlgo() bool {
+func (b *BearerTokenValidator) usingPublicKeyAlgo() bool {
 	switch b.SigningAlgorithm {
 	case "RS256", "RS512", "RS384":
 		return true
@@ -112,7 +115,7 @@ func (b *BearTokenValidator) usingPublicKeyAlgo() bool {
 }
 
 // Init initialize jwt configs.
-func (b *BearTokenValidator) Init() error {
+func (b *BearerTokenValidator) Init() error {
 
 	if b.SigningAlgorithm == "" {
 		b.SigningAlgorithm = "HS256"
@@ -125,7 +128,7 @@ func (b *BearTokenValidator) Init() error {
 	return nil
 }
 
-func (b *BearTokenValidator) Validate(ctx context.Context, input string) (*Identity, error) {
+func (b *BearerTokenValidator) Validate(ctx context.Context, input string) (*Identity, error) {
 	token, err := b.parseToken(input)
 
 	if err != nil {
@@ -146,7 +149,7 @@ func (b *BearTokenValidator) Validate(ctx context.Context, input string) (*Ident
 	return b.IdentityHandler(ctx, claims)
 }
 
-func (b *BearTokenValidator) signedString(token *jwt.Token) (string, error) {
+func (b *BearerTokenValidator) signedString(token *jwt.Token) (string, error) {
 	var tokenString string
 	var err error
 	if b.usingPublicKeyAlgo() {
@@ -158,7 +161,7 @@ func (b *BearTokenValidator) signedString(token *jwt.Token) (string, error) {
 }
 
 // TokenGenerator method that clients can use to get a jwt token.
-func (b *BearTokenValidator) TokenGenerator(userID string) (string, time.Time, error) {
+func (b *BearerTokenValidator) TokenGenerator(userID string) (string, time.Time, error) {
 
 	token := jwt.New(jwt.GetSigningMethod(b.SigningAlgorithm))
 	expire := time.Now().Add(b.Timeout)
@@ -176,11 +179,17 @@ func (b *BearTokenValidator) TokenGenerator(userID string) (string, time.Time, e
 	return tokenString, expire, nil
 }
 
-func (b *BearTokenValidator) parseToken(token string) (*jwt.Token, error) {
+func (b *BearerTokenValidator) parseToken(token string) (*jwt.Token, error) {
 	return jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
 		if strings.HasPrefix(token.Method.Alg(), "HS") {
+			if len(b.Key) == 0 {
+				return nil, ErrInvalidKey
+			}
 			return b.Key, nil
 		} else {
+			if b.pubKey == nil {
+				return nil, ErrInvalidPubKey
+			}
 			return b.pubKey, nil
 		}
 	})
