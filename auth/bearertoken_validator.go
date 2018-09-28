@@ -10,6 +10,9 @@ import (
 )
 
 type BearerTokenValidator struct {
+	// Realm name to display to the user. Required.
+	Realm string
+
 	// Secret key used for signing. Required.
 	Key []byte
 
