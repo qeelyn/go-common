@@ -10,10 +10,6 @@ import (
 )
 
 type BearerTokenValidator struct {
-	// signing algorithm - possible values are HS256, HS384, HS512
-	// Optional, default is HS256.
-	SigningAlgorithm string
-
 	// Secret key used for signing. Required.
 	Key []byte
 
@@ -106,20 +102,8 @@ func (b *BearerTokenValidator) publicKey() error {
 	return nil
 }
 
-func (b *BearerTokenValidator) usingPublicKeyAlgo() bool {
-	switch b.SigningAlgorithm {
-	case "RS256", "RS512", "RS384":
-		return true
-	}
-	return false
-}
-
 // Init initialize jwt configs.
 func (b *BearerTokenValidator) Init() error {
-
-	if b.SigningAlgorithm == "" {
-		b.SigningAlgorithm = "HS256"
-	}
 
 	if err := b.readKeys(); err != nil {
 		return err
@@ -147,36 +131,6 @@ func (b *BearerTokenValidator) Validate(ctx context.Context, input string) (*Ide
 	}
 
 	return b.IdentityHandler(ctx, claims)
-}
-
-func (b *BearerTokenValidator) signedString(token *jwt.Token) (string, error) {
-	var tokenString string
-	var err error
-	if b.usingPublicKeyAlgo() {
-		tokenString, err = token.SignedString(b.privKey)
-	} else {
-		tokenString, err = token.SignedString(b.Key)
-	}
-	return tokenString, err
-}
-
-// TokenGenerator method that clients can use to get a jwt token.
-func (b *BearerTokenValidator) TokenGenerator(userID string) (string, time.Time, error) {
-
-	token := jwt.New(jwt.GetSigningMethod(b.SigningAlgorithm))
-	expire := time.Now().Add(b.Timeout)
-	claims := jwt.MapClaims{
-		"sub": userID,
-		"iat": time.Now().Unix(),
-		"exp": expire.Unix(),
-	}
-	token.Claims = claims
-	tokenString, err := b.signedString(token)
-	if err != nil {
-		return "", time.Time{}, err
-	}
-
-	return tokenString, expire, nil
 }
 
 func (b *BearerTokenValidator) parseToken(token string) (*jwt.Token, error) {

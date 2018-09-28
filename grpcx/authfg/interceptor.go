@@ -10,7 +10,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"strings"
 )
 
 const (
@@ -59,17 +58,10 @@ func WithAuthClient(fromHttpHeader bool) grpc.UnaryClientInterceptor {
 func ServerJwtAuthFunc(config map[string]interface{}) grpc_auth.AuthFunc {
 	pubKey, _ := config["public-key"].([]byte)
 	ekey, _ := config["encryption-key"].(string)
-	algo, _ := config["algorithm"].(string)
-	if strings.HasPrefix(algo, "RS") && pubKey == nil {
-		panic("miss pubKeyFile or priKeyFile setting when use RS signing algorithm")
-	}
-	if strings.HasPrefix(algo, "HS") && ekey == "" {
-		panic("miss encryption-key setting when use HS signing algorithm")
-	}
+
 	validator := auth.BearerTokenValidator{
-		PubKeyFile:       pubKey,
-		Key:              []byte(ekey),
-		SigningAlgorithm: algo,
+		PubKeyFile: pubKey,
+		Key:        []byte(ekey),
 		IdentityHandler: func(ctx context.Context, claims jwt.MapClaims) (*auth.Identity, error) {
 			orgId := metautils.ExtractIncoming(ctx).Get(organizationIdKey)
 			id, _ := claims["sub"].(string)
