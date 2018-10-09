@@ -30,16 +30,21 @@ func NewFileLogger(config map[string]interface{}) zapcore.Core {
 		if os.MkdirAll(filepath.Dir(fp), os.FileMode(0755)) != nil {
 			panic(fmt.Errorf("Invalid Logger filename: %s", fp))
 		}
-		if _, err := os.Create(fp); err != nil {
+		fi, err := os.Create(fp)
+		defer fi.Close()
+		if err != nil {
 			panic(fmt.Errorf("create Logger filename: %s failure", fp))
 		}
 	}
 
+	ms, _ := config["maxsize"].(int) // megabytes
+	mbk, _ := config["maxbackups"].(int)
+	ma, _ := config["maxsize"].(int) // days
 	w := zapcore.AddSync(&lumberjack.Logger{
 		Filename:   fp,
-		MaxSize:    config["maxsize"].(int), // megabytes
-		MaxBackups: config["maxbackups"].(int),
-		MaxAge:     config["maxsize"].(int), // days
+		MaxSize:    ms,
+		MaxBackups: mbk,
+		MaxAge:     ma,
 	})
 
 	level := zap.InfoLevel
