@@ -88,7 +88,8 @@ func (l *Logger) WithContext(ctx context.Context) *zap.Logger {
 
 // get trace id of zap field type
 func TraceIdField(ctx context.Context) zap.Field {
-	return zap.String(TraceIdKey, ctx.Value(ContextHeaderName).(string))
+	val, _ := ctx.Value(ContextHeaderName).(string)
+	return zap.String(TraceIdKey, val)
 }
 
 func NewLogger(cores ...zapcore.Core) *Logger {
