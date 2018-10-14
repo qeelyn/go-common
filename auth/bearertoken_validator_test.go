@@ -16,7 +16,7 @@ func TestBearTokenValidator_ValidateHS(t *testing.T) {
 	key := "passw0rd"
 	HStokenNoexp := "eyJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE1MzgwNTE4ODAsInN1YiI6IjE4ODE5In0.vV7V-B2TZQnu9s24YWnq4IKjC1OJfkBnyzBpAJ1kVDg"
 	b := &auth.BearerTokenValidator{
-		Key: []byte(key),
+		EncryptionKey: []byte(key),
 		IdentityHandler: func(c context.Context, claims jwt.MapClaims) (*auth.Identity, error) {
 			id := claims["sub"].(string)
 			return &auth.Identity{
@@ -43,16 +43,17 @@ func TestBearTokenValidator_ValidateRS(t *testing.T) {
 	RSToken := "eyJhbGciOiJSUzI1NiJ9.eyJleHAiOjE1MzkwNTkwODAsImlhdCI6MTUzODA1MTg4MCwic3ViIjoiMTIyIn0.ogNGcmT2I6aET15cXrKbG3HUdG-mOgvYeJh8P-vxu2lk9oYyIqnouYv_PR2oKsEasEBjcKpDTS7NLh4GMkUx-NT0WyqbPIw3ZAcnsWruJg4fpk0bf75JXcl5gs1STCHaNlh0JFsZNUJynTBgiyweeLqFlxQIpQaMr5DEGbA5yEY"
 	RSTokenExp := "eyJhbGciOiJSUzI1NiJ9.eyJleHAiOjE1MzgwNTI4ODAsImlhdCI6MTUzODA1MTg4MCwic3ViIjoiMTIyIn0.np1h02qA7sVZbumXWGGPI8l7pkDCeFWuVwhd0YCyLPYSCfZ2DgIRikwEpLdPXrxcUCGJ0NYCzZpVGAMEESndJ7m0d8CbU6mICRuPpMYD3JNSR-qNbV-uiNoOFnk9sTFI_6t79W_0V9N1AlefzFwBtyfQAYAW_A0ByyWMKXMLgKg"
 	key := "passw0rd"
-	b := &auth.BearerTokenValidator{
-		Key: []byte(key),
-		PubKeyFile: []byte(
-			`-----BEGIN PUBLIC KEY-----
+	pkey, err := auth.ParsePublicKey([]byte(
+		`-----BEGIN PUBLIC KEY-----
 MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDutm+bsYoI7vy2PSvQQEovcVNp
 9sAkZAxUbSpKsE/VGNxhEwHP/LaTLK8mX7Yo1FeA6kWxkD/s0w07YUeiIZc4D2Hd
 UjrhTZm6Fn6ZyziuMoinEG82Rz0B0ggqDMiGj73SQBdGRqFUALL0EwStRNwBEta3
 3+Od61UJ1mqf7ZArhwIDAQAB
 -----END PUBLIC KEY-----
-`),
+`))
+	b := &auth.BearerTokenValidator{
+		EncryptionKey: []byte(key),
+		PubKey:        pkey,
 		IdentityHandler: func(c context.Context, claims jwt.MapClaims) (*auth.Identity, error) {
 			id := claims["sub"].(string)
 			return &auth.Identity{
@@ -60,7 +61,7 @@ UjrhTZm6Fn6ZyziuMoinEG82Rz0B0ggqDMiGj73SQBdGRqFUALL0EwStRNwBEta3
 			}, nil
 		},
 	}
-	err := b.Init()
+	err = b.Init()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -83,16 +84,18 @@ func TestBearTokenValidator_ValidateComplex(t *testing.T) {
 	key := "passw0rd"
 	RStoken := "eyJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE1MzgwNTE4ODAsInN1YiI6IjEyMiJ9.MRMOEvVuBO3h0ZuQJ9Pxt4CmJN8_eUWDZTmAkZemmCzZixVNn1l03s2Hjs7NuoIm1KRSACr3WJvN4kozKhydjXYhalU5cj2HBfEopE1NKkqsbkjdAfNGwJy-kxKGn7edVc6DQ1Nx_3gcqMcDPeef5DWmHJR0-dhKV65aqT6O7LQ"
 	HStoken := "eyJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE1MzgwNTE4ODAsInN1YiI6IjEyMiJ9.zxOF3-wx7xEwWXK2H3aWSKOKups6XZZO-rpYSN985AA"
-	b := &auth.BearerTokenValidator{
-		Key: []byte(key),
-		PubKeyFile: []byte(
-			`-----BEGIN PUBLIC KEY-----
+	pkey, err := auth.ParsePublicKey([]byte(
+		`-----BEGIN PUBLIC KEY-----
 MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDutm+bsYoI7vy2PSvQQEovcVNp
 9sAkZAxUbSpKsE/VGNxhEwHP/LaTLK8mX7Yo1FeA6kWxkD/s0w07YUeiIZc4D2Hd
 UjrhTZm6Fn6ZyziuMoinEG82Rz0B0ggqDMiGj73SQBdGRqFUALL0EwStRNwBEta3
 3+Od61UJ1mqf7ZArhwIDAQAB
 -----END PUBLIC KEY-----
-`),
+`))
+
+	b := &auth.BearerTokenValidator{
+		EncryptionKey: []byte(key),
+		PubKey:        pkey,
 		IdentityHandler: func(c context.Context, claims jwt.MapClaims) (*auth.Identity, error) {
 			id := claims["sub"].(string)
 			return &auth.Identity{
@@ -100,7 +103,7 @@ UjrhTZm6Fn6ZyziuMoinEG82Rz0B0ggqDMiGj73SQBdGRqFUALL0EwStRNwBEta3
 			}, nil
 		},
 	}
-	err := b.Init()
+	err = b.Init()
 	if err != nil {
 		t.Fatal(err)
 	}

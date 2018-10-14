@@ -58,10 +58,13 @@ func WithAuthClient(fromHttpHeader bool) grpc.UnaryClientInterceptor {
 func ServerJwtAuthFunc(config map[string]interface{}) grpc_auth.AuthFunc {
 	pubKey, _ := config["public-key"].([]byte)
 	ekey, _ := config["encryption-key"].(string)
-
+	publicKey, err := auth.ParsePublicKey(pubKey)
+	if err != nil {
+		panic(err)
+	}
 	validator := auth.BearerTokenValidator{
-		PubKeyFile: pubKey,
-		Key:        []byte(ekey),
+		PubKey:        publicKey,
+		EncryptionKey: []byte(ekey),
 		IdentityHandler: func(ctx context.Context, claims jwt.MapClaims) (*auth.Identity, error) {
 			orgId := metautils.ExtractIncoming(ctx).Get(organizationIdKey)
 			id, _ := claims["sub"].(string)
