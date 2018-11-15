@@ -30,11 +30,13 @@ github.com/golang/sys v0.0.0-20180810173357-98c5dad5d1a0 h1:yDw7pbUrALsr3UAykpMS
 github.com/golang/sys v0.0.0-20180810173357-98c5dad5d1a0/go.mod h1:5JyrLPvD/ZdaYkT7IqKhsP5xt7aLjA99KXRtk4EIYDk=
 github.com/golang/text v0.3.0 h1:uI5zIUA9cg047ctlTptnVc0Ghjfurf2eZMFrod8R7v8=
 github.com/golang/text v0.3.0/go.mod h1:GUiq9pdJKRKKAZXiVgWFEvocYuREvC14NhI4OPgEjeE=
+github.com/google/go-genproto v0.0.0-20180808183934-383e8b2c3b9e h1:Tsi8+06uqy0+2divmJT3uIbxfpknqDddEnmBg5LWHrI=
 github.com/google/go-genproto v0.0.0-20180808183934-383e8b2c3b9e/go.mod h1:3Rcd9jSoLVkV/osPrt5CogLvLiarfI8U9/x78NwhuDU=
 github.com/grpc-ecosystem/go-grpc-middleware v1.0.0 h1:BWIsLfhgKhV5g/oF34aRjniBHLTZe5DNekSjbAjIS6c=
 github.com/grpc-ecosystem/go-grpc-middleware v1.0.0/go.mod h1:FiyG127CGDf3tlThmgyCl78X/SZQqEOJBCDaAfeWzPs=
 github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0 h1:Ovs26xHkKqVztRpIrF/92BcuyuQ/YW4NSIpoGtfXNho=
 github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0/go.mod h1:8NvIoxWQoOIhqOTXgfV/d3M/q6VIi02HzZEHgUlZvzk=
+github.com/grpc/grpc-go v1.14.0 h1:mdO9QxZPgbtuMPrWCiqhyGPGLg/8E/sZpJwOOqyl134=
 github.com/grpc/grpc-go v1.14.0/go.mod h1:OkrsaFQVyvU0P5XR5PQ2d19rg8dJ/sIJcthuZNcktKk=
 github.com/hashicorp/hcl v0.0.0-20180404174102-ef8a98b0bbce h1:xdsDDbiBDQTKASoGEZ+pEmF1OnWuu8AQ9I8iNbHNeno=
 github.com/hashicorp/hcl v0.0.0-20180404174102-ef8a98b0bbce/go.mod h1:oZtUIOe8dh44I2q6ScRibXws4Ajl+d+nod3AaR9vL5w=

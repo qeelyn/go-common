@@ -35,7 +35,6 @@ require (
 	github.com/spf13/viper v1.1.0
 	github.com/uber/jaeger-client-go v2.14.0+incompatible
 	github.com/uber/jaeger-lib v1.5.0
-	github.com/ugorji/go v1.1.1 // indirect
 	github.com/vmihailenco/msgpack v3.3.2+incompatible
 	go.uber.org/atomic v1.3.2 // indirect
 	go.uber.org/multierr v1.1.0 // indirect
