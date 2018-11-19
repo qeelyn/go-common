@@ -27,25 +27,32 @@ var (
 // fromHttpHeader表示从http头部信息请求,一般为gateway时设置为true
 func WithAuthClient(fromHttpHeader bool) grpc.UnaryClientInterceptor {
 	return func(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
-		var authHeader string
+		var authHeader, orgid string
 		if fromHttpHeader {
 			if val := ctx.Value(authorizationKey); val != nil {
 				authHeader = val.(string)
 			}
+			if val := ctx.Value(organizationIdKey); val != nil {
+				orgid = val.(string)
+			}
 		} else {
 			authHeader = metautils.ExtractIncoming(ctx).Get(authorizationKey)
+
+			identity := ctx.Value(auth.ActiveUserContextKey)
+			if identity != nil {
+				if id, ok := identity.(auth.Identity); ok {
+					orgid = id.OrgId
+				}
+			}
 		}
 		var kv []string
 		if authHeader != "" {
 			kv = append(kv, authorizationKey, authHeader)
 		}
-		// org is from ctx
-		identity := ctx.Value(auth.ActiveUserContextKey)
-		if identity != nil {
-			if id, ok := identity.(auth.Identity); ok {
-				kv = append(kv, organizationIdKey, id.OrgId)
-			}
+		if orgid != "" {
+			kv = append(kv, organizationIdKey, orgid)
 		}
+
 		if len(kv) > 0 {
 			ctx = metadata.AppendToOutgoingContext(ctx, kv...)
 		}
